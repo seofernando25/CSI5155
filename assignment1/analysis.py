@@ -21,7 +21,7 @@ from typing import Iterable, Tuple
 import numpy as np
 import pandas as pd
 
-from models.utils import split_features
+from preprocessing import split_features
 
 data_path = Path(__file__).resolve().parent / "marketing_campaign.csv"
 max_corr_pairs = 10
