@@ -1,24 +1,34 @@
-"""
-Clean model definitions with simple APIs.
+from . import (
+    logistic_regression,
+    decision_tree,
+    svm,
+    knn,
+    random_forest,
+    gradient_boosting,
+)
 
-Each model module exports:
-- get_model(): Returns an initialized model instance
-- get_param_grid(): Returns the hyperparameter grid for tuning
-"""
+MODELS = ("lr", "dt", "svm", "knn", "rf", "gb")
 
-from .logistic_regression import get_model as get_lr_model, get_param_grid as get_lr_param_grid
-from .decision_tree import get_model as get_dt_model, get_param_grid as get_dt_param_grid
-from .svm import get_model as get_svm_model, get_param_grid as get_svm_param_grid
-from .knn import get_model as get_knn_model, get_param_grid as get_knn_param_grid
-from .random_forest import get_model as get_rf_model, get_param_grid as get_rf_param_grid
-from .gradient_boosting import get_model as get_gb_model, get_param_grid as get_gb_param_grid
+MODEL_MODULES = {
+    "lr": logistic_regression,
+    "dt": decision_tree,
+    "svm": svm,
+    "knn": knn,
+    "rf": random_forest,
+    "gb": gradient_boosting,
+}
 
-__all__ = [
-    'get_lr_model', 'get_lr_param_grid',
-    'get_dt_model', 'get_dt_param_grid',
-    'get_svm_model', 'get_svm_param_grid',
-    'get_knn_model', 'get_knn_param_grid',
-    'get_rf_model', 'get_rf_param_grid',
-    'get_gb_model', 'get_gb_param_grid',
-]
+MODEL_LABELS = {
+    "lr": "Logistic Regression",
+    "dt": "Decision Tree",
+    "svm": "SVM",
+    "knn": "k-NN",
+    "rf": "Random Forest",
+    "gb": "Gradient Boosting",
+}
+
+def get_model_module(code: str):
+    return MODEL_MODULES[code]
+
+
 

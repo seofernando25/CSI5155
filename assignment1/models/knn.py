@@ -1,23 +1,14 @@
-"""k-Nearest Neighbors model definition."""
-
 from sklearn.neighbors import KNeighborsClassifier
+from skopt.space import Integer, Categorical
 
 
 def get_model():
-    """Get a k-NN model instance."""
     return KNeighborsClassifier()
 
 
-def get_param_grid():
-    """Get the hyperparameter grid for tuning."""
+def get_param_space():
     return {
-        'clf__n_neighbors': [3, 5, 7, 11, 15, 21],
-        'clf__weights': ['uniform', 'distance'],
-        'clf__metric': ['euclidean', 'manhattan'],
+        "clf__n_neighbors": Integer(1, 10),
+        "clf__weights": Categorical(["uniform", "distance"]),
+        "clf__metric": Categorical(["euclidean", "manhattan"]),
     }
-
-
-def needs_scaling():
-    """Returns whether this model requires feature scaling."""
-    return True
-

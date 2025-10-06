@@ -1,28 +1,17 @@
-"""Decision Tree model definition."""
-
 from sklearn.tree import DecisionTreeClassifier
+from skopt.space import Integer, Categorical
 
 
 def get_model():
-    """Get a Decision Tree model instance."""
-    return DecisionTreeClassifier(
-        random_state=42
-    )
+    return DecisionTreeClassifier()
 
 
-def get_param_grid():
-    """Get the hyperparameter grid for tuning."""
+def get_param_space():
     return {
-        'clf__criterion': ['gini', 'entropy'],
-        'clf__max_depth': [5, 10, 15, 20, None],
-        'clf__min_samples_split': [2, 10, 20],
-        'clf__min_samples_leaf': [1, 2],
-        'clf__max_features': [None, 'sqrt', 'log2'],
-        'clf__class_weight': [None, 'balanced'],
+        "clf__criterion": Categorical(["gini", "entropy"]),
+        "clf__max_depth": Integer(3, 15),
+        "clf__min_samples_split": Integer(5, 20),
+        "clf__min_samples_leaf": Integer(2, 10),
+        "clf__max_features": Categorical([None, "sqrt", "log2"]),
+        "clf__class_weight": Categorical([None, "balanced"]),
     }
-
-
-def needs_scaling():
-    """Returns whether this model requires feature scaling."""
-    return False
-
