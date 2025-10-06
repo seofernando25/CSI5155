@@ -9,16 +9,6 @@ wheels/
 # Virtual environments
 .venv
 
-# Machine Learning outputs and generated files
-models/outputs/
-*.png
-*.jpg
-*.jpeg
-*.gif
-
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints/
-
 # IDE and editor files
 .vscode/
 .idea/
@@ -38,3 +28,5 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# *.png

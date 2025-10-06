@@ -68,13 +68,12 @@ def tune_model(
     start_time = time.time()
     iteration_count = [0]
 
-    def progress_callback(optim_result):
+    def progress_callback(_):
         iteration_count[0] += 1
         elapsed = time.time() - start_time
-        if iteration_count[0] % 2 == 0 or iteration_count[0] == 1:
-            print(
-                f"[{model_name}][{sampling}] Iteration {iteration_count[0]}/5 - Elapsed: {elapsed:.1f}s"
-            )
+        print(
+            f"[{model_name}][{sampling}] Iteration {iteration_count[0]}/5 - Elapsed: {elapsed:.1f}s"
+        )
 
     grid.fit(X, y, callback=progress_callback)
     best_est = grid.best_estimator_
@@ -84,15 +83,16 @@ def tune_model(
         f"[{model_name}][{sampling}] Completed in {total_time:.1f}s - Best params: {grid.best_params_}"
     )
 
-    probas = cross_val_predict(best_est, X, y, cv=2, method="predict_proba", n_jobs=2)[
+    probas = cross_val_predict(best_est, X, y, cv=2, method="predict_proba", n_jobs=-1)[
         :, 1
     ]
+    roc_auc = roc_auc_score(y, probas)
+
     y_pred = (probas >= 0.5).astype(int)
     cm = confusion_matrix(y, y_pred)
     precision = precision_score(y, y_pred, zero_division=0)
     recall = recall_score(y, y_pred, zero_division=0)
     specificity = specificity_score(y, y_pred)
-    roc_auc = roc_auc_score(y, probas)
 
     results = {
         "model": model_name,
@@ -171,9 +171,7 @@ def run_all_tuning(max_workers: int = CPU_COUNT):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Hyperparameter tuning for complaint prediction"
-    )
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "--model", choices=MODELS
     )
