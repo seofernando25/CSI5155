@@ -6,6 +6,11 @@ from sklearn.dummy import ClassifierMixin
 from imblearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sampling import SamplingStrategy, get_sampler
 
 DATA_PATH = "marketing_campaign.csv"
@@ -111,3 +116,59 @@ def build_pipeline(
         steps.append(("sampler", sampler))
     steps.append(("clf", classifier))
     return Pipeline(steps=steps)
+
+
+def get_pipeline(model_name: str, sampling_strategy: str, X_data=None):
+    """
+    Get a pipeline for a specific model and sampling strategy.
+    
+    Args:
+        model_name: One of 'lr', 'dt', 'svm', 'knn', 'rf', 'gb'
+        sampling_strategy: One of 'none', 'undersample', 'smote'
+        X_data: DataFrame to determine column types (optional)
+    
+    Returns:
+        sklearn Pipeline object
+    """
+    # Map model names to classifiers
+    classifiers = {
+        'lr': LogisticRegression(random_state=42),
+        'dt': DecisionTreeClassifier(random_state=42),
+        'svm': SVC(random_state=42, probability=True),
+        'knn': KNeighborsClassifier(),
+        'rf': RandomForestClassifier(random_state=42),
+        'gb': GradientBoostingClassifier(random_state=42)
+    }
+    
+    # Map sampling strategy names
+    sampling_map = {
+        'none': 'none',
+        'undersample': 'under',
+        'smote': 'smote'
+    }
+    
+    if model_name not in classifiers:
+        raise ValueError(f"Unknown model: {model_name}")
+    
+    if sampling_strategy not in sampling_map:
+        raise ValueError(f"Unknown sampling strategy: {sampling_strategy}")
+    
+    # Get classifier
+    classifier = classifiers[model_name]
+    
+    # Get sampling strategy
+    sampling = sampling_map[sampling_strategy]
+    
+    # Create preprocessor based on data if provided
+    if X_data is not None:
+        numeric_cols = X_data.select_dtypes(include=[np.number]).columns.tolist()
+        categorical_cols = X_data.select_dtypes(include=["object"]).columns.tolist()
+        preprocessor = build_preprocessor(numeric_cols, categorical_cols)
+    else:
+        # Create a basic preprocessor (will be updated when fit is called)
+        preprocessor = build_preprocessor([], [])
+    
+    # Build the pipeline
+    pipeline = build_pipeline(preprocessor, classifier, sampling)
+    
+    return pipeline

@@ -14,19 +14,20 @@ def save_figure(filename, output_dir="figures"):
     plt.close()
 
 
-def load_tuning_results(tuning_file="tuning_results.json"):
+def load_tuning_results(tuning_file="comprehensive_evaluation_results.json"):
     try:
         with open(tuning_file, "r") as f:
             return json.load(f)
     except FileNotFoundError:
-        print(f"Error: {tuning_file} not found. Run tuning first.")
+        print(f"Error: {tuning_file} not found. Run evaluate_all_models.py first.")
         return None
 
 
-def find_metrics_for_model(tuning_results, model_key, sampling_key):
+def find_metrics_for_model(tuning_results, model_key, sampling_key, cv_type="cv2"):
+    """Find metrics for a specific model and sampling strategy."""
     for result in tuning_results:
         if result["model"] == model_key and result["sampling"] == sampling_key:
-            return result["metrics"]
+            return result[f"{cv_type}_metrics"]
     return None
 
 

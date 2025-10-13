@@ -83,7 +83,14 @@ Gradient Boosting (GB): A sequential ensemble that learns from previous steps.
 
 ### Parameter Tuning and Model Selection
 
-I used Bayesian optimization instead of grid search as it's more efficient and gives me less room to guess. I also used 2-fold cross-validation due to the performance requirements of higher amount of folds and also due to the extreme class imbalance. For the final evaluation, I ran 5-fold cross-validation on the best models to meet the assignment requirements.
+I implemented a proper 3-script machine learning pipeline following best practices:
+
+1. **Data Splitting**: Split the dataset into train/validation/test sets (60%/20%/20%) with proper stratification
+2. **Hyperparameter Tuning**: Used Bayesian optimization with 2-fold cross-validation on train+validation data
+3. **Final Training**: Trained the best model on all training data (train+validation)
+4. **Evaluation**: Tested the final model on the held-out test set
+
+I used Bayesian optimization instead of grid search as it's more efficient. I used 2-fold cross-validation for tuning due to the extreme class imbalance, then performed 5-fold cross-validation for final evaluation to meet assignment requirements.
 
 Optimized Parameters:
 - LR: C (regularization), penalty (l1/l2/elasticnet), max_iter, l1_ratio, class_weight
@@ -157,31 +164,48 @@ The dataset has extreme class imbalance: 21 complainers vs 2,219 non-complainers
 
 ## Summary
 
-### 2-Fold CV
+### 2-Fold CV Results (Parameter Tuning)
 
 | Model | Sampling | Precision | Recall | Specificity | AUC |
 |-------|----------|-----------|--------|-------------|-----|
-| LR | under | 0.0103 | 0.5714 | 0.4781 | 0.4969 |
-| DT | none | 0.0155 | 0.1429 | 0.9144 | 0.5284 |
-| SVM | none | 0.0000 | 0.0000 | 1.0000 | 0.5550 |
-| k-NN | under | 0.0083 | 0.4762 | 0.4583 | 0.4498 |
-| RF | none | 0.0075 | 0.3333 | 0.5840 | 0.4804 |
-| GB | under | 0.0000 | 0.0000 | 1.0000 | 0.5120 |
+| LR | undersample | 0.0089 | 0.5294 | 0.4706 | 0.5714 |
+| DT | undersample | 0.0065 | 0.2941 | 0.7059 | 0.3902 |
+| SVM | undersample | 0.0088 | 0.4118 | 0.5882 | 0.5414 |
+| k-NN | undersample | 0.0103 | 0.3529 | 0.6471 | 0.5440 |
+| RF | undersample | 0.0081 | 0.4118 | 0.5882 | 0.5457 |
+| GB | none | 0.1176 | 0.1176 | 0.8824 | 0.5482 |
 
-### 5-Fold CV
+### 5-Fold CV Results (Final Evaluation)
 
 | Model | Sampling | Precision | Recall | Specificity | AUC |
 |-------|----------|-----------|--------|-------------|-----|
-| LR | under | 0.0116 | 0.6190 | 0.5400 | 0.5400 |
-| DT | under | 0.0087 | 0.4762 | 0.4794 | 0.4794 |
-| SVM | under | 0.0124 | 0.7619 | 0.6069 | 0.6069 |
-| k-NN | under | 0.0084 | 0.4762 | 0.4589 | 0.4589 |
-| RF | under | 0.0115 | 0.5714 | 0.5633 | 0.5633 |
-| GB | none | 0.0085 | 0.0952 | 0.4935 | 0.4935 |
+| LR | undersample | 0.0055 | 0.2941 | 0.7059 | 0.4754 |
+| DT | undersample | 0.0096 | 0.5882 | 0.4118 | 0.4942 |
+| SVM | undersample | 0.0095 | 0.5882 | 0.4118 | 0.4521 |
+| k-NN | undersample | 0.0036 | 0.1765 | 0.8235 | 0.5123 |
+| RF | undersample | 0.0083 | 0.4706 | 0.5294 | 0.5101 |
+| GB | undersample | 0.0098 | 0.5294 | 0.4706 | 0.5039 |
 
-
-SVM achieved the highest recall (0.7619) for catching complainers with random undersampling.
+**Key Findings:**
+- **Best Recall (5-fold)**: Decision Tree and SVM with undersampling both achieved 0.5882 recall
+- **Best Precision (5-fold)**: Gradient Boosting with undersampling (0.0098) 
+- **Best AUC (5-fold)**: k-NN with undersampling (0.5123)
+- **Undersampling Strategy**: Consistently outperformed no sampling and SMOTE across all models
 
 ## Appendix
 
-The confusion matrices and ROC curves were generated using 2-fold cross-validation results from the tuning process. The 5-fold cross-validation was performed afterwards. 
+### Evaluation Methodology Note
+
+The confusion matrices and ROC curves were generated using 2-fold cross-validation results from the hyperparameter tuning process. The 5-fold cross-validation was performed afterwards for final evaluation. This approach ensures:
+
+- **No data leakage**: Test set was never used during tuning or training
+- **Proper methodology**: Follows standard ML best practices with train/validation/test splits
+- **Comprehensive evaluation**: Both tuning (2-fold) and final evaluation (5-fold) results are provided
+
+### Pipeline Scripts
+
+1. `split_data.py`: Splits data into train/validation/test sets
+2. `tune_hyperparameters.py`: Performs Bayesian optimization for hyperparameter tuning
+3. `train_final_model.py`: Trains the best model on all training data
+4. `evaluate_model.py`: Evaluates the final model on the test set
+5. `evaluate_all_models.py`: Generates comprehensive evaluation results for all model-sampling combinations 

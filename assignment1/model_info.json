@@ -1,0 +1,25 @@
+{
+  "model_name": "svm",
+  "sampling_strategy": "undersample",
+  "best_params": {
+    "clf__C": 17.76576664980768,
+    "clf__gamma": 0.0032780432870046913,
+    "clf__kernel": "linear"
+  },
+  "best_cv_score": 0.6666666666666666,
+  "training_metrics": {
+    "precision": 0.015412511332728921,
+    "recall": 1.0,
+    "roc_auc": 0.2137199668599834,
+    "confusion_matrix": [
+      [
+        689,
+        1086
+      ],
+      [
+        0,
+        17
+      ]
+    ]
+  }
+}

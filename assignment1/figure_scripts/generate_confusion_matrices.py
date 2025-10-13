@@ -10,7 +10,7 @@ from .common_utils import (
 
 
 def generate_confusion_matrix_grid(
-    output_dir="figures", tuning_file="tuning_results.json"
+    output_dir="figures", tuning_file="comprehensive_evaluation_results.json", cv_type="cv2"
 ):
     tuning_results = load_tuning_results(tuning_file)
     if tuning_results is None:
@@ -22,12 +22,12 @@ def generate_confusion_matrix_grid(
         for idx, (model_key, model_label) in enumerate(MODEL_LABELS.items()):
             ax = axes[idx]
 
-            metrics = find_metrics_for_model(tuning_results, model_key, sampling_key)
+            metrics = find_metrics_for_model(tuning_results, model_key, sampling_key, cv_type)
 
             if metrics is not None:
                 cm = np.array(metrics["confusion_matrix"])
 
-                ax.imshow(cm)
+                ax.imshow(cm, cmap='Blues')
                 ax.set_title(
                     f"{model_label}\n(P={metrics['precision']:.3f}, R={metrics['recall']:.3f})",
                     fontsize=FONT_CONFIG["label"],
@@ -43,7 +43,8 @@ def generate_confusion_matrix_grid(
                             ha="center",
                             va="center",
                             color="black",
-                            bbox=dict(facecolor="white"),
+                            bbox=dict(facecolor="white", alpha=0.8),
+                            fontsize=FONT_CONFIG["annotation"]
                         )
 
                 ax.set_xlabel("Predicted", fontsize=FONT_CONFIG["tick"])
@@ -66,7 +67,7 @@ def generate_confusion_matrix_grid(
                     model_label, fontsize=FONT_CONFIG["label"], fontweight="bold"
                 )
 
-        add_suptitle(fig, f"Confusion Matrices - {sampling_label}")
+        add_suptitle(fig, f"Confusion Matrices - {sampling_label} ({cv_type.upper()})")
         save_figure(f"confusion_matrices_{sampling_key}.png", output_dir)
 
 
