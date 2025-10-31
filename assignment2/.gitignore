@@ -1,5 +1,78 @@
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
 .venv/
 venv/
+env/
+ENV/
+
+# Cache and generated files
+.cache/
+*.cache
+*.pyc
+*.pyo
+
+# Dataset downloads
 dataset/
 
+# Generated results (JSON files from experiments)
+baseline.json
+*_results.json
+*_summary.json
+semi_results.json
+semi_summary.json
+
+# Generated figures
+figures/
+*.png
+*.gif
+*.jpg
+*.jpeg
+*.svg
+
+# Generated PDFs (if generated from REPORT.md)
+# Uncomment the next line if REPORT.pdf is auto-generated:
+# *.pdf
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# Build and distribution
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Environment variables
+.env
+.env.local

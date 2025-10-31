@@ -1,0 +1,63 @@
+School of Electrical Engineering and Computer Science
+CSI5155 – Machine Learning
+Project Fall 2025
+
+**Topic: Deep Learning**
+
+**100 marks (30% of final grade)**
+Project proposal (0 marks, but mandatory)
+Project report (80 marks)
+Project implementation (20 marks)
+
+**Instructions:**
+* The project may be completed individually or in groups of two. Groups of two will receive the same grade other than in exceptional circumstances.
+* Submit your project using BrightSpace on or before the due date. We cannot accept submissions that are more than 24 hours late (unless you have been given written permission from the instructor).
+* For the implementation, you should either upload your code on BrightSpace or provide a link to a GitHub repository. Note that if you choose to use GitHub, the date and time of the last change to your repository should be before the deadline.
+
+**Important deadlines:**
+* Register your team and submit your project proposal on BrightSpace by **October 31**.
+* Submit your code and final report on BrightSpace by **November 28**.
+
+**Project Description**
+The purpose of this project is to give you the opportunity to apply deep learning to a subject area that you are personally interested in. You will be evaluated on your ability to identify a problem that can be solved with deep learning, and to follow the appropriate process for doing so (finding a dataset, setting up training, validation, and test sets, determining an appropriate evaluation metric, and so on). You are welcome to choose a dataset or task that contributes to your Masters/PhD program research, if applicable.
+
+---
+
+**Project Proposal**
+
+**In no more than one page**, please provide the following information:
+1. Project Title
+2. Broad project area (e.g., NLP, computer vision, computational biology, etc.)
+3. A concise statement of the research question or problem you are tackling.
+4. The dataset(s) you plan to use (provide a link if possible).
+5. The algorithm(s) you are planning to implement for your analysis. (Note: you must include at least one non-generative deep learning approach such as RNN, CNN, or others similar to those discussed in class.)
+6. A concise description of how you plan to evaluate the models.
+
+The project proposal must be submitted no later than October 31, but you are encouraged to submit earlier. There is no grade associated with the proposal, but I will review them to ensure that you are on the right track for the full project. Therefore, the earlier you submit, the earlier I can provide feedback.
+
+**Project Report [80%]**
+
+The final report should be between 6-8 pages and contain the following information:
+* Motivation for the project and an explanation of the problem statement
+* A description of the data (where did it come from, how many data samples are in it, what pre-processing did you have to do, etc.)
+* A description of the hyperparameter tuning and/or model selection process (explain your train-validation-test process, which hyperparameters were tuned and using what method, did you try some things that didn't work, etc.)
+* Presentation and analysis of results
+* Statement of the limitations of the work (e.g. your dataset might represent only one population and not others, the labels might be noisy, etc.)
+* Conclusion
+* References (if needed)
+
+Your report will be assessed on its clarity and completeness, as well as the validity of your results and analysis.
+
+---
+
+**Project Implementation [20%]**
+
+Projects must be implemented in Python. You may use libraries such as TensorFlow, PyTorch, or Keras. If needed, you can run your experiments using the Morning Star compute resources (or other resources such as Google Colab).
+
+Submit your code on BrightSpace or link to your github repository. Your code will be assessed on its functionality, correctness, and organization.
+
+**Reminder of our class AI Policy:**
+
+Students may use AI tools for basic word processing functions, including grammar and spell checking (e.g. Grammarly, Microsoft Word Editor, Copilot). Students may also use AI tools for clarifying challenging concepts, understanding error messages, generating study questions, or brainstorming. Such uses of AI do not need to be declared.
+
+Students are *not* permitted to use AI to generate entire assignment solutions, write code from scratch, or generate reports from scratch. *The first draft should always be your own.* If AI is then used to substantially modify or improve your first draft, then please declare it (the name of the tool and how it was used) in your assignment/report. You will not be penalized for declaring the use of AI. You must still be able to explain the content of your assignments and project if asked by the instructor or TA.
