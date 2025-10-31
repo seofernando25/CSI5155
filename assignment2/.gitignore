@@ -12,8 +12,6 @@ env/
 ENV/
 
 # Cache and generated files
-# .cache/
-*.cache
 *.pyc
 *.pyo
 
@@ -76,3 +74,8 @@ htmlcov/
 # Environment variables
 .env
 .env.local
+
+# Allow .cache/ folder to be tracked
+!.cache/
+!.cache/**
+!.cache/**/*
