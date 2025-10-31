@@ -12,7 +12,7 @@ env/
 ENV/
 
 # Cache and generated files
-.cache/
+# .cache/
 *.cache
 *.pyc
 *.pyo
