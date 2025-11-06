@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.pyc
+
+# Project cache and data
+.cache/
+.aim/
+.python-version
+
+# Extracted features (large numpy arrays)
+.cache/features/*.npy
