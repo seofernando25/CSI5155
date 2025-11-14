@@ -83,8 +83,8 @@ def compute_fisher_vectors(images, pca, gmm):
     )
     temp_model.gmm = gmm
 
-    # Normalize images
-    X = [img.astype(np.float32) / 255.0 for img in images]
+    # Images from processed dataset are already float32 in [0,1]
+    X = [np.asarray(img, dtype=np.float32) for img in images]
 
     # Extract patches
     rgb_descs = temp_model._extract_patches(X)
@@ -140,23 +140,13 @@ def main():
         print(f"ERROR: {exc}")
         return
 
-    # Prepare training data
+    # Prepare training and validation data
     print("Preparing training data...")
-    X_all, y_all = prepare_split(ds_dict, "train")
-    print(f"Total training samples: {len(X_all)}")
+    X_train, y_train = prepare_split(ds_dict, "train")
+    print(f"Training samples: {len(X_train)}")
 
-    # Use 10% of training data for training, rest for validation
-    n_train = int(len(X_all) * 0.75)
-    indices = np.random.RandomState(RANDOM_STATE).permutation(len(X_all))
-    train_indices = indices[:n_train]
-    val_indices = indices[n_train:]  # Use remaining 90% for validation
-
-    X_train = [X_all[i] for i in train_indices]
-    y_train = y_all[train_indices]
-    X_val = [X_all[i] for i in val_indices]
-    y_val = y_all[val_indices]
-
-    print(f"Train samples (75%): {len(X_train)}")
+    print("Preparing validation data...")
+    X_val, y_val = prepare_split(ds_dict, "validation")
     print(f"Validation samples: {len(X_val)}")
 
     # Load pre-trained components

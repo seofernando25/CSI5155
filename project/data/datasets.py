@@ -32,7 +32,15 @@ class CIFAR10Dataset(Dataset):
                 image = image.astype(np.uint8)
             image = self.transform(image)
         else:
-            image = torch.from_numpy(image.astype(np.float32) / 255.0).permute(2, 0, 1)
+            # Images are already normalized to 0-1 range from processing
+            # Just convert to tensor and permute channels
+            if image.dtype == np.uint8:
+                # Fallback: if somehow uint8, normalize
+                image = image.astype(np.float32) / 255.0
+            else:
+                # Already float32 in 0-1 range
+                image = image.astype(np.float32)
+            image = torch.from_numpy(image).permute(2, 0, 1)
 
         return image, label
 
@@ -41,7 +49,7 @@ def _resolve_dataset_path(dataset_root: Optional[Path]) -> Path:
     if dataset_root is not None:
         return Path(dataset_root)
     repo_root = Path(__file__).resolve().parents[1]
-    return repo_root / ".cache" / "base_datasets" / "cifar10"
+    return repo_root / ".cache" / "processed_datasets" / "cifar10"
 
 
 def load_cifar10_data(dataset_root: Optional[Path] = None):
@@ -49,8 +57,8 @@ def load_cifar10_data(dataset_root: Optional[Path] = None):
 
     if not dataset_path.exists():
         raise FileNotFoundError(
-            f"Base dataset not found at {dataset_path}. "
-            "Please run: uv run python -m data.download"
+            f"Dataset not found at {dataset_path}. "
+            "Please run: uv run python -m data.download (and then uv run python -m data.process)"
         )
 
     return load_from_disk(str(dataset_path))

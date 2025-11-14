@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataset Explorer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="ds_explorer.css">
+</head>
+<body>
+    <div class="explorer-layout">
+        <aside class="controls-panel">
+            <header>
+                <h1>Dataset Explorer</h1>
+            </header>
+            <form id="controls-form">
+                <fieldset>
+                    <legend>Dataset Type</legend>
+                    <div class="toggle-group">
+                        <input type="radio" id="type-base" name="type" value="base">
+                        <label for="type-base">Base</label>
+                        <input type="radio" id="type-processed" name="type" value="processed">
+                        <label for="type-processed">Processed</label>
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend>Split</legend>
+                    <div class="toggle-group" id="split-options">
+                    </div>
+                </fieldset>
+                <div class="input-group">
+                    <label for="page-size">Samples per Page</label>
+                    <input type="number" id="page-size" value="24" min="1" max="100">
+                </div>
+            </form>
+        </aside>
+
+        <main class="content-area">
+            <section id="info-display" class="dataset-info" style="display: none;">
+                <h2 id="dataset-name"></h2>
+                <div class="info-grid">
+                    <div><strong>Total Samples</strong> <span id="total-samples"></span></div>
+                    <div><strong>Splits</strong> <span id="splits"></span></div>
+                    <div><strong>Dimensions</strong> <span id="dimensions"></span></div>
+                    <div><strong>Min Value</strong> <span id="min-value"></span></div>
+                    <div><strong>Max Value</strong> <span id="max-value"></span></div>
+                    <div style="grid-column: 1 / -1;"><strong>Features</strong> <span id="features"></span></div>
+                </div>
+            </section>
+
+            <div id="samples-container" class="samples-container">
+                <div id="status-message" class="status-message">Select options to begin.</div>
+                <div id="samples-grid" class="samples-grid"></div>
+            </div>
+            
+            <nav id="pagination" class="pagination" style="display: none;"></nav>
+        </main>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+
+        const state = {
+            type: 'base',
+            split: 'train',
+            page: 1,
+            pageSize: 24
+        };
+
+        const elements = {
+            controlsForm: document.getElementById('controls-form'),
+            infoDisplay: document.getElementById('info-display'),
+            datasetName: document.getElementById('dataset-name'),
+            totalSamples: document.getElementById('total-samples'),
+            splits: document.getElementById('splits'),
+            features: document.getElementById('features'),
+            dimensions: document.getElementById('dimensions'),
+            minValue: document.getElementById('min-value'),
+            maxValue: document.getElementById('max-value'),
+            samplesContainer: document.getElementById('samples-container'),
+            samplesGrid: document.getElementById('samples-grid'),
+            statusMessage: document.getElementById('status-message'),
+            pagination: document.getElementById('pagination'),
+            pageSizeInput: document.getElementById('page-size'),
+            splitOptions: document.getElementById('split-options')
+        };
+        
+        async function updateView() {
+            showStatus('Loading dataset info...');
+            elements.infoDisplay.style.display = 'none';
+            elements.samplesGrid.innerHTML = '';
+            elements.pagination.style.display = 'none';
+
+            let info = null;
+            try {
+                const infoUrl = `${API_BASE}/datasets/${state.type}`;
+                const infoResponse = await fetch(infoUrl);
+                if (!infoResponse.ok) throw new Error(`Failed to load info: ${infoResponse.statusText}`);
+                info = await infoResponse.json();
+                displayInfo(info);
+
+                showStatus('Loading samples...');
+                const samplesUrl = `${API_BASE}/datasets/${state.type}/${state.split}?page=${state.page}&page_size=${state.pageSize}`;
+                const samplesResponse = await fetch(samplesUrl);
+                if (!samplesResponse.ok) {
+                    if (samplesResponse.status === 404) {
+                        const availableSplits = info ? info.splits.join(', ') : 'unknown';
+                        throw new Error(`Split "${state.split}" not available for ${state.type} dataset. Available splits: ${availableSplits}`);
+                    }
+                    if (samplesResponse.status === 422) {
+                        const errorData = await samplesResponse.json();
+                        throw new Error(`Invalid request. API says: ${JSON.stringify(errorData.detail)}`);
+                    }
+                    throw new Error(`Failed to load samples: ${samplesResponse.statusText}`);
+                }
+                const data = await samplesResponse.json();
+
+                if (data.samples && data.samples.length > 0) {
+                    hideStatus();
+                    displaySamples(data.samples);
+                    renderPagination(data.pagination);
+                    elements.samplesContainer.scrollTop = 0;
+                } else {
+                    showStatus('No samples found for this selection.', 'info');
+                }
+            } catch (error) {
+                console.error(error);
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        function updateSplitOptions(availableSplits) {
+            elements.splitOptions.innerHTML = '';
+            availableSplits.forEach(split => {
+                const input = document.createElement('input');
+                input.type = 'radio';
+                input.id = `split-${split}`;
+                input.name = 'split';
+                input.value = split;
+                input.addEventListener('change', () => {
+                    state.split = split;
+                    state.page = 1;
+                    updateView();
+                });
+                
+                const label = document.createElement('label');
+                label.htmlFor = `split-${split}`;
+                label.textContent = split.charAt(0).toUpperCase() + split.slice(1);
+                
+                elements.splitOptions.appendChild(input);
+                elements.splitOptions.appendChild(label);
+            });
+            
+            if (!availableSplits.includes(state.split)) {
+                state.split = availableSplits[0];
+            }
+            const currentSplitInput = document.querySelector(`input[name="split"][value="${state.split}"]`);
+            if (currentSplitInput) {
+                currentSplitInput.checked = true;
+            }
+        }
+
+        function displayInfo(info) {
+            elements.datasetName.textContent = info.name.toUpperCase();
+            elements.totalSamples.textContent = info.total_samples.toLocaleString();
+            elements.splits.textContent = info.splits.join(', ');
+            
+            updateSplitOptions(info.splits);
+            
+            if (info.dimensions && Array.isArray(info.dimensions)) {
+                elements.dimensions.textContent = info.dimensions.join(' × ');
+            } else {
+                elements.dimensions.textContent = info.dimensions || 'N/A';
+            }
+            elements.minValue.textContent = (info.min_value !== null && info.min_value !== undefined) ? info.min_value : 'N/A';
+            elements.maxValue.textContent = (info.max_value !== null && info.max_value !== undefined) ? info.max_value : 'N/A';
+            
+            const featuresText = Object.entries(info.features)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join('; ');
+            elements.features.textContent = featuresText;
+            elements.infoDisplay.style.display = 'block';
+        }
+
+        function displaySamples(samples) {
+            const fragment = document.createDocumentFragment();
+            samples.forEach((sample, index) => {
+                const card = document.createElement('article');
+                card.className = 'sample-card';
+                card.style.animationDelay = `${index * 0.05}s`;
+                
+                const imageHtml = sample.image_base64
+                    ? `<img src="${sample.image_base64}" alt="Sample" class="sample-image">`
+                    : '<div class="sample-image" style="display: flex; align-items: center; justify-content: center; color: #6b7280;">No Image</div>';
+
+                const labelHtml = sample.label_name
+                    ? `<div class="sample-label">${sample.label_name}</div>`
+                    : '';
+
+                let featuresHtml = '<div class="sample-features">';
+                for (const [key, value] of Object.entries(sample)) {
+                    if (key !== 'image_base64' && key !== 'label_name') {
+                        let displayValue = JSON.stringify(value);
+                        if (key === 'label' && sample.label_name) {
+                            displayValue = `${value} (${sample.label_name})`;
+                        }
+                        featuresHtml += `<p><strong>${key}:</strong> ${displayValue}</p>`;
+                    }
+                }
+                featuresHtml += '</div>';
+
+                card.innerHTML = imageHtml + labelHtml + featuresHtml;
+                fragment.appendChild(card);
+            });
+            elements.samplesGrid.innerHTML = '';
+            elements.samplesGrid.appendChild(fragment);
+        }
+
+        function renderPagination(pagination) {
+            elements.pagination.innerHTML = '';
+            
+            const prevBtn = document.createElement('button');
+            prevBtn.textContent = '← Previous';
+            prevBtn.disabled = !pagination.has_prev;
+            prevBtn.onclick = () => { if (pagination.has_prev) { state.page--; updateView(); } };
+            
+            const pageInfo = document.createElement('span');
+            pageInfo.textContent = `Page ${pagination.page} of ${pagination.total_pages}`;
+            
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = 'Next →';
+            nextBtn.disabled = !pagination.has_next;
+            nextBtn.onclick = () => { if (pagination.has_next) { state.page++; updateView(); } };
+            
+            elements.pagination.append(prevBtn, pageInfo, nextBtn);
+            elements.pagination.style.display = 'flex';
+        }
+
+        function syncControlsWithState() {
+            const typeEl = document.querySelector(`input[name="type"][value="${state.type}"]`);
+            if (typeEl) typeEl.checked = true;
+            const splitEl = document.querySelector(`input[name="split"][value="${state.split}"]`);
+            if (splitEl) splitEl.checked = true;
+            elements.pageSizeInput.value = state.pageSize;
+        }
+
+        function showStatus(message, type = 'info') {
+            elements.statusMessage.textContent = message;
+            elements.statusMessage.className = `status-message ${type}`;
+            elements.statusMessage.style.display = 'block';
+        }
+
+        function hideStatus() {
+            elements.statusMessage.style.display = 'none';
+        }
+
+        elements.controlsForm.addEventListener('change', (e) => {
+            const { name, value, type } = e.target;
+            if (type !== 'radio') return;
+
+            if (name === 'type') {
+                state.type = value;
+                state.page = 1;
+                updateView();
+            } else if (name === 'split') {
+                state.split = value;
+                state.page = 1;
+                updateView();
+            }
+        });
+
+        elements.controlsForm.addEventListener('submit', (e) => e.preventDefault());
+        
+        elements.pageSizeInput.addEventListener('change', (e) => {
+            const newPageSize = parseInt(e.target.value, 10);
+            if (isNaN(newPageSize) || newPageSize < 1) {
+                e.target.value = state.pageSize;
+                return;
+            }
+            const firstItemIndex = (state.page - 1) * state.pageSize;
+            state.pageSize = newPageSize;
+            state.page = Math.floor(firstItemIndex / state.pageSize) + 1;
+            updateView();
+        });
+
+        window.addEventListener('load', () => {
+            syncControlsWithState();
+            updateView();
+        });
+    </script>
+</body>
+</html>

@@ -17,3 +17,6 @@ __pycache__/
 *.fls
 *.synctex.gz
 *.pdf
+*.bbl
+*.blg
+*.out

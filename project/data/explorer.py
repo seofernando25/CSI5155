@@ -7,9 +7,11 @@ from typing import Any, Dict, Literal
 import numpy as np
 from datasets import Dataset, DatasetDict, load_from_disk
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from PIL import Image
 import uvicorn
+
+from data.datasets import get_cifar10_class_names
 
 
 # Global variables to store dataset info
@@ -34,14 +36,23 @@ def make_serializable(obj):
         return obj
 
 
-def pil_to_np(image_pil):
-    if isinstance(image_pil, Image.Image):
-        return np.array(image_pil)
-    return image_pil
+def pil_to_np(image_data):
+    """Convert image data to numpy array, handling PIL Images, numpy arrays, and lists."""
+    if isinstance(image_data, Image.Image):
+        return np.array(image_data)
+    elif isinstance(image_data, np.ndarray):
+        return image_data
+    elif isinstance(image_data, (list, tuple)):
+        # Handle lists/tuples (which can occur with datasets library)
+        return np.asarray(image_data)
+    else:
+        return image_data
 
 
 def load_dataset_info(dataset_path: Path) -> Dict[str, Any]:
-    ds_dict: DatasetDict = load_from_disk(str(dataset_path))
+    loaded = load_from_disk(str(dataset_path))
+    assert isinstance(loaded, DatasetDict), "Expected DatasetDict"
+    ds_dict: DatasetDict = loaded
     info = {
         "name": dataset_path.name,
         "splits": list(ds_dict.keys()),
@@ -62,10 +73,18 @@ def load_dataset_info(dataset_path: Path) -> Dict[str, Any]:
     if image_col is None:
         raise ValueError("No image column found")
 
-    info["dimensions"] = list(pil_to_np(ds[0][image_col]).shape)
+    # Get first image and convert to numpy array
+    first_image = pil_to_np(ds[0][image_col])
+    if isinstance(first_image, np.ndarray):
+        info["dimensions"] = list(first_image.shape)
+    else:
+        # Fallback: try to get shape from the feature metadata
+        info["dimensions"] = "Unknown"
 
     # Sample min and max over first up to 100 samples
     sample_images = [pil_to_np(ds[i][image_col]) for i in range(min(100, len(ds)))]
+    # Ensure all are numpy arrays
+    sample_images = [img if isinstance(img, np.ndarray) else np.asarray(img) for img in sample_images]
     sample_images_np = np.stack(sample_images)
     info["min_value"] = make_serializable(np.min(sample_images_np))
     info["max_value"] = make_serializable(np.max(sample_images_np))
@@ -73,20 +92,31 @@ def load_dataset_info(dataset_path: Path) -> Dict[str, Any]:
 
 
 def image_to_base64(image_data) -> str:
+    """Convert image data to base64 PNG string, handling normalized [0,1] and [0,255] ranges."""
     arr = pil_to_np(image_data)
+    
+    # Ensure it's a numpy array
+    if not isinstance(arr, np.ndarray):
+        arr = np.asarray(arr)
+    
+    # Handle normalized [0,1] range: convert to [0,255]
+    if arr.dtype in (np.float32, np.float64):
+        if arr.max() <= 1.0:
+            # Already in [0,1] range, scale to [0,255]
+            arr = (arr * 255.0).astype(np.uint8)
+        else:
+            # In some other range, normalize to [0,255]
+            arr = ((arr - arr.min()) / (arr.max() - arr.min() + 1e-8) * 255).astype(np.uint8)
+    elif arr.dtype != np.uint8:
+        # Other integer types or non-uint8, normalize to [0,255]
+        arr = ((arr - arr.min()) / (arr.max() - arr.min() + 1e-8) * 255).astype(np.uint8)
 
     if arr.ndim == 2:
-        if arr.dtype != np.uint8:
-            arr = ((arr - arr.min()) / (arr.max() - arr.min() + 1e-8) * 255).astype(
-                np.uint8
-            )
         pil_image = Image.fromarray(arr, mode="L")
     elif arr.ndim == 3 and arr.shape[2] == 3:
-        if arr.dtype != np.uint8:
-            arr = ((arr - arr.min()) / (arr.max() - arr.min() + 1e-8) * 255).astype(
-                np.uint8
-            )
         pil_image = Image.fromarray(arr, mode="RGB")
+    else:
+        raise ValueError(f"Unsupported image shape: {arr.shape}")
 
     buffer = io.BytesIO()
     pil_image.save(buffer, format="PNG")
@@ -133,6 +163,13 @@ async def root():
         return HTMLResponse(content=f.read())
 
 
+@app.get("/ds_explorer.css")
+async def get_css():
+    css_path = Path(__file__).resolve().parents[1] / "web" / "ds_explorer.css"
+    with open(css_path, "r", encoding="utf-8") as f:
+        return Response(content=f.read(), media_type="text/css")
+
+
 @app.get("/api/datasets")
 async def list_datasets():
     return {
@@ -141,13 +178,13 @@ async def list_datasets():
     }
 
 
-@app.get("/api/datasets/{dataset_type}/{dataset_name}")
+@app.get("/api/datasets/{dataset_type}")
 async def get_dataset_info(
     dataset_type: Literal["base", "processed"],
-    dataset_name: Literal["mnist", "cifar10"],
 ):
     if dataset_type not in ["base", "processed"]:
         raise HTTPException(status_code=400, detail="Invalid dataset type")
+    dataset_name = "cifar10"  # Only one dataset available
     return (
         base_datasets_info[dataset_name]
         if dataset_type == "base"
@@ -155,15 +192,15 @@ async def get_dataset_info(
     )
 
 
-@app.get("/api/datasets/{dataset_type}/{dataset_name}/{split}")
+@app.get("/api/datasets/{dataset_type}/{split}")
 async def get_dataset_samples(
     dataset_type: Literal["base", "processed"],
-    dataset_name: Literal["mnist", "cifar10"],
-    split: Literal["train", "test"],
+    split: Literal["train", "test", "validation"],
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
 ):
     assert dataset_type in ["base", "processed"], "Invalid dataset type"
+    dataset_name = "cifar10"  # Only one dataset available
     assert (
         dataset_name in base_datasets_info or dataset_name in processed_datasets_info
     ), f"Dataset {dataset_name} in {dataset_type} not found"
@@ -171,7 +208,9 @@ async def get_dataset_samples(
     repo_root = Path(__file__).resolve().parents[1]
     dataset_path = repo_root / ".cache" / f"{dataset_type}_datasets" / dataset_name
 
-    ds_dict: DatasetDict = load_from_disk(str(dataset_path))
+    loaded = load_from_disk(str(dataset_path))
+    assert isinstance(loaded, DatasetDict), "Expected DatasetDict"
+    ds_dict: DatasetDict = loaded
 
     if split not in ds_dict:
         raise HTTPException(status_code=404, detail="Split not found")
@@ -189,10 +228,19 @@ async def get_dataset_samples(
     start_idx = (page - 1) * page_size
     end_idx = min(start_idx + page_size, total_samples)
 
+    # Get class names for label mapping
+    class_names = get_cifar10_class_names()
+
     samples = []
     for i in range(start_idx, end_idx):
         sample = ds[i]
         sample = make_serializable(sample)
+
+        # Add label name if label exists
+        if "label" in sample:
+            label_idx = int(sample["label"])
+            if 0 <= label_idx < len(class_names):
+                sample["label_name"] = class_names[label_idx]
 
         if image_col and image_col in sample:
             sample["image_base64"] = image_to_base64(sample[image_col])

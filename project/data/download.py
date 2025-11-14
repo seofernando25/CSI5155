@@ -19,7 +19,3 @@ def run(force: bool = False) -> None:
     cifar10_dir = datasets_root / "cifar10"
     print(f"Downloading CIFAR-10 (uoft-cs/cifar10) to {cifar10_dir}...")
     download_dataset("uoft-cs/cifar10", cifar10_dir, force)
-
-    mnist_dir = datasets_root / "mnist"
-    print(f"Downloading MNIST (ylecun/mnist) to {mnist_dir}...")
-    download_dataset("ylecun/mnist", mnist_dir, force)

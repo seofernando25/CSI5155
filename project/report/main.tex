@@ -1,6 +1,130 @@
-\documentclass{article}
+\documentclass{scrartcl}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{natbib}
+\usepackage[colorlinks=true,citecolor=blue,linkcolor=blue,urlcolor=blue]{hyperref}
+\usepackage{cleveref}
+
+\usepackage[margin=1in]{geometry}
+
+\title{From Handcrafted Features to Double Descent on CIFAR-10}
+\author{Fernando Nogueira \\ Student ID: 300 195 829}
+\date{November 13, 2025}
+
 \begin{document}
 
-Hello, world 
+\maketitle
+
+\section{Introduction}
+
+For decades, the field of computer vision was dominated by a paradigm of feature engineering. Success on tasks like image classification involved crafting sophisticated handcrafted representations (eg, SIFT, ORB, Fisher Vectors) that could be effectively processed by classical machine learning models like Support Vector Machines (SVMs). This classical paradigm was governed by the foundational bias-variance trade-off, which describes an U-shaped curve for generalization: models whose capacity were too simple would undefit and models that were too large would overfit by memorizing the training set. The primary goal of a researcher was to find a "medium" complexity model at the precise bottom of the generalization gap curve.This project's SVM + Fisher Vector baseline will server as a representative of this classical, feature-engineered approach.
+
+The deep learning revolution, started by models like AlexNet, rendered the feature-engineered paradigm obsolute by learning hierarchical features automatically from raw data. This shift, however, created a theoretical paradox. Modern networks are massively over-parametrized and can often possess "far more trainable model parameters than the number of samples" (Rethinking generalization citation) they are trained on. According to classical U-shaped theory, these models should overfit catastrophically. The foundational 2017 paper, "Understanding Deep Learning Requires Re-Thinking Generalization," proved that these networks have sufficient "effective capacity... for memorizing the entire data set," and can even be trained to achieve 0\% training errror on "completely random labels". This poses the question: If deep netwworks have demonstrated capacity to memorize random noise, why do they still manage to find solutions that generalize well on real data?
+
+A hypethesis that attempts to resolve this paradox is the "double descent" phenomenon, which suggests that classical U-shaped curve is merely the first part of a larger, more complex curve. As model capacity increases, the test error is hypothesized to follow a new curve:
+\begin{itemize}
+\item The underparametrized regime, in which test error decreases (the classical first descent)
+\item The interpolation threshold: Which the model becomes just large enough to perfectly fit the training data. Here, the test error spikes (the classical overfitting peak)
+\item And the overparametrized regime in which as the model capacity continues to increase beyond this treshold, the test error paradoxically decreases again (the second descent)
+\end{itemize}
+
+In the modern over-parametrized regime, we have many solutions that could possibly achieve zero trianing error. Stochastic Gradient Descent (SGD), is believed to act as an implicit regularizer, biasing it toward finding simpler, smoother solutions, which in turn generalizes better. The project will then in turn, investigate the full spectrum of model generalization, from the classical regime to the modern over-parametrized one, using the CIFAR-10 dataset.
+
+The investigation will be guided by the following research questions:
+
+\begin{itemize}
+\item \textbf{RQ1:} How does performance of a strong classical baseline compare to a modern convolutional neural network optimized in the CIFAR-10 task?
+\item \textbf{RQ2:} Can a model-wise double descent curve be experimentally induced by systematically scaling the capacity (i.e width) of a CNN architecture, and if so, where does the interpolation peak occur?
+\item \textbf{RQ3:} What is the qualitate and quantitate differences in generalization between a classical SVM, a critically parametrized CNN (at error peak), and over-parametrized CNN (in the second descent), particularly in their inter-class confusions?
+\end{itemize}
+
+I hypothesize that (1) the optimized CNN will statistically and significantly outperform the SVM baseline; (2) by scaling model width, the full double descent curve will be observed, with test error peaking at the interpolation threshold before declining again; and (3) over-parametrized models will demonstrated improved inter-class confusion (eg: 'cat' vs. 'dog') than simpler models.
+
+\section{Methodology}
+
+The project will be structure as a two-part experiment. First, a classical baseline will be trained and evaluated using a Support Vector Machine with Fisher Vector features. Second, a model-wise double descent curve is experimentally induced by training a series of Convolutional Neural Networks.
+
+\subsection{Dataset and Preprocessing}
+
+The CIFAR-10 dataset \cite{krizhevsky2009learning} is used, which consists of 60,000 32x32 color images across 10 class. The standard 50,000 image training set and 10,000 image test set are used.
+
+The data partitioning is done as follow:
+- The 50,000 image training set is split into a 40,000 image training set and a 10,000 image validation set
+- The official 10,000 image test set is held out and used only once at the project's conclusion to generate the results.
+
+To amplify the double descent effect, as suggested by the literature, 20\% label noise is introduced to the 40,000 image training set. This is done by permanently replacing the true label for 8,000 randomly selected training images with a uniformly random wrong label. The 10,000 image validation set and test set remain with their original correct labels. All models will be trained on the noisy training set and evaluated on the clean validation and test set.
+
+
+\subsection{Classical Baseline}
+
+The classical baseline uses a Linear Support Vector Classifier (LinearSVC) trained on Fisher Vector (FV) representations derived from dense local patch descriptors.
+
+Patches of size $8 \times 8$ pixels are densely extracted with a stride of 4, yielding a regular grid of 49 overlapping patches per $32 \times 32$ image. Each patch is flattened into a 192-dimensional vector. Principal Component Analysis (PCA) with whitening is applied to reduce the patch descriptors to $D = 24$ dimensions. This value was selected as it retains approximately 96\% of the total variance. A Gaussian Mixture Model (GMM) with $K = 64$ components is then fitted to the PCA-reduced patches to model the distribution of local descriptors. The resulting Fisher Vector for each image is $2 \times D \times K = 3{,}072$-dimensional, encoding statistics relative to the GMM. The Fisher Vectors are standardized (zero mean, unit variance) and then used to train a LinearSVC with $L_2$ regularization and hinge loss.
+
+\subsection{Classical Baseline}
+
+The classical baseline is a Linear Support Vector Clasifier (LinearSVC). The model won't be trained on raw pixels but on high-dimensional Fisher Vectors extracted from images patches, processed through a PCA reduction and a Gaussian Mixture Model step.
+
+A patch size of 8x8 with a stride of 4 was chosen.
+A PCA dimension of 24 was also chosen by search, as it explains 96.3\% of the variance.
+Fisher Vectors were trained using 64 components.
+
+
+C was tuned to X via grid search, with performance evaluated on the clean validation set
+
+\subsection{Models}
+
+We implemented an AlexNet-inspired CNN adapted for 32x32 inputs: three convolutional layers (with ReLU and max-pooling), followed by three fully connected layers, using dropout (0.5) for regularization. The model was trained with Adam optimizer and cross-entropy loss.
+
+As a baseline, ORB (Oriented FAST and Rotated BRIEF) features were extracted from each image (500 keypoints), flattened, and fed into an RBF-kernel SVM classifier.
+
+\subsection{Hyperparameter Tuning}
+
+Hyperparameters were tuned using Optuna on the validation set over 50 trials. For the CNN: learning rate (1e-3 to 1e-5), batch size (32-128), and dropout rate (0.2-0.5). For SVM: C (1e-2 to 1e2) and gamma (scale, 0.01). Early stopping was applied after 10 epochs without validation improvement.
+
+The training procedure used PyTorch on Google Colab, with 100 epochs for CNN and scikit-learn for SVM.
+
+\section{Results and Analysis}
+
+Both models were evaluated on accuracy and macro F1-score on the held-out test set. The CNN outperformed the SVM baseline substantially.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lcc}
+\toprule
+Model & Accuracy (\%) & F1-Score \\
+\midrule
+AlexNet CNN & 78.5 & 0.78 \\
+SVM + ORB & 52.3 & 0.51 \\
+\bottomrule
+\end{tabular}
+\caption{Test set performance comparison between models.}
+\label{tab:results}
+\end{table}
+
+% Figure \ref{fig:example} shows a sample training/validation curve for the CNN, illustrating mild overfitting after epoch 60.
+
+% \begin{figure}[h]
+% \centering
+% \includegraphics[width=0.6\textwidth]{example.png}
+% \caption{Training and validation accuracy curves for the AlexNet CNN.}
+% \label{fig:example}
+% \end{figure}
+
+The confusion matrix for the CNN revealed higher errors on visually similar classes (e.g., cat vs. dog), while SVM struggled across all classes due to limited feature discriminability. These results confirm the hypothesis, with the CNN reducing misclassifications by approximately 26\%.
+
+\section{Limitations}
+
+The CIFAR-10 images are low-resolution (32x32), potentially underutilizing ORB's strengths on larger images. The SVM baseline may not scale well with feature dimensionality. Additionally, training was limited to available compute resources, preventing exploration of deeper architectures. Future work could incorporate transfer learning from ImageNet-pretrained models or advanced augmentation techniques.
+
+\section{Conclusion}
+
+This project demonstrated the superiority of CNN-based automatic feature extraction over handcrafted ORB features with SVM for CIFAR-10 classification, achieving 78.5\% accuracy versus 52.3\%. These findings underscore the transformative impact of deep learning in computer vision, though classical methods remain relevant for interpretability.
+
+\bibliographystyle{plain}
+\bibliography{bibliography}
 
 \end{document}

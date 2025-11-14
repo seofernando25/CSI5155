@@ -65,9 +65,8 @@ def main():
     X_train, y_train = prepare_split(ds_dict, "train")
     print(f"Training samples: {len(X_train)}")
 
-    # Normalize images to float32
-    print("Normalizing images...")
-    X_train = [img.astype(np.float32) / 255.0 for img in X_train]
+    # Images from processed dataset are already float32 in [0,1]
+    X_train = [np.asarray(img, dtype=np.float32) for img in X_train]
 
     # Extract patches
     print(f"\nExtracting patches (patch_size={PATCH_SIZE}, stride={STRIDE})...")

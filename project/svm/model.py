@@ -85,8 +85,8 @@ class ClassifierSVM:
         return descriptors_list
 
     def predict(self, X: List[np.ndarray]) -> np.ndarray:
-        # Normalize to float32 early
-        X = [img.astype(np.float32) / 255.0 for img in X]
+        # Images from processed dataset are already float32 in [0,1]
+        X = [np.asarray(img, dtype=np.float32) for img in X]
         rgb_descs = self._extract_patches(X)
 
         # Compute Fisher Vectors sequentially
