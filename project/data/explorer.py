@@ -1,16 +1,15 @@
-import argparse
 import base64
 import io
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict, Literal
+
 import numpy as np
-from datasets import load_from_disk, Dataset, DatasetDict
+from datasets import Dataset, DatasetDict, load_from_disk
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse
 from PIL import Image
 import uvicorn
-from typing import Literal
 
 
 # Global variables to store dataset info
@@ -19,7 +18,6 @@ processed_datasets_info: Dict[str, Any] = {}
 
 
 def make_serializable(obj):
-    """Recursively convert non-JSON serializable objects to serializable types."""
     if isinstance(obj, dict):
         return {k: make_serializable(v) for k, v in obj.items()}
     elif isinstance(obj, list):
@@ -37,7 +35,6 @@ def make_serializable(obj):
 
 
 def pil_to_np(image_pil):
-    """Convert PIL Image to numpy array."""
     if isinstance(image_pil, Image.Image):
         return np.array(image_pil)
     return image_pil
@@ -99,7 +96,6 @@ def image_to_base64(image_data) -> str:
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    """Load dataset information on startup and cleanup on shutdown."""
     global base_datasets_info, processed_datasets_info
 
     repo_root = Path(__file__).resolve().parents[1]
@@ -217,14 +213,5 @@ async def get_dataset_samples(
     }
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Dataset Explorer Server")
-    parser.add_argument("--host", default="127.0.0.1", help="Host to bind to")
-    parser.add_argument("--port", type=int, default=8000, help="Port to bind to")
-    args = parser.parse_args()
-
-    uvicorn.run("data_explorer:app", host=args.host, port=args.port, log_level="info")
-
-
-if __name__ == "__main__":
-    main()
+def run(host: str = "127.0.0.1", port: int = 8000) -> None:
+    uvicorn.run("data.explorer:app", host=host, port=port, log_level="info")

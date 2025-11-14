@@ -1,11 +1,9 @@
-import argparse
 import shutil
 from pathlib import Path
-from typing import List
-from typing import Callable
+from typing import Callable, List
 
 import numpy as np
-from datasets import load_from_disk, DatasetDict
+from datasets import DatasetDict, load_from_disk
 from skimage.color import rgb2gray
 from skimage.transform import resize
 from skimage.util import img_as_float
@@ -41,15 +39,7 @@ def process_dataset(
     ds_dict.save_to_disk(str(dst_dir))
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Overwrite existing postprocessed datasets if present",
-    )
-    args = parser.parse_args()
-
+def run(force: bool = False) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     base_root = repo_root / ".cache" / "base_datasets"
     out_root = repo_root / ".cache" / "processed_datasets"
@@ -57,14 +47,10 @@ def main() -> None:
 
     src = base_root / "cifar10"
     dst = out_root / "cifar10"
-    if dst.exists() and args.force:
+    if dst.exists() and force:
         shutil.rmtree(dst, ignore_errors=True)
-    
+
     print(f"Processing CIFAR-10: {src} -> {dst}")
     transform_batch = build_transform_pipeline()
     process_dataset(src, dst, transform_batch)
     print("Done.")
-
-
-if __name__ == "__main__":
-    main()
