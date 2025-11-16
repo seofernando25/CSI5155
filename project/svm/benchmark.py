@@ -1,10 +1,9 @@
 import time
 from datetime import datetime
 from pathlib import Path
-
 from torch.utils.tensorboard import SummaryWriter
-
-from data import load_cifar10_data, prepare_split
+import numpy as np
+from data import load_cifar10_data
 from svm.model import ClassifierSVM
 from svm.constants import SVM_CLASSIFIER_PATH
 
@@ -35,7 +34,9 @@ def run(model_path: str = SVM_CLASSIFIER_PATH):
         writer.close()
         return None
 
-    X_test, y_test = prepare_split(ds_dict, "test")
+    test_ds = ds_dict["test"]
+    X_test = [np.asarray(item["img"], dtype=np.float32) for item in test_ds]
+    y_test = np.array([item["label"] for item in test_ds])
     print(f"Test samples: {len(X_test)}")
 
     print("\nBenchmarking model on test set...")

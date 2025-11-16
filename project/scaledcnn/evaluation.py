@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-from typing import Callable, Optional, Sequence
+from typing import Callable, Optional, Sequence, Sized, Union
 
 import numpy as np
 import torch
@@ -208,7 +208,7 @@ def evaluate_model_checkpoint(
     device: str | None,
     class_names: Sequence[str],
     dataloader_factory: Callable[
-        [str, int, torch.device, bool], tuple[DataLoader, torch.device]
+        [str, int, Union[torch.device, str, None], bool], tuple[DataLoader, torch.device]
     ],
     evaluation_fn: Callable[
         [torch.nn.Module, DataLoader, torch.device, Sequence[str]], dict
@@ -241,21 +241,14 @@ def evaluate_model_checkpoint(
         on_checkpoint_loaded(checkpoint)
 
     print("\nLoading CIFAR-10 test dataset...")
-    test_loader, torch_device = dataloader_factory(
-        "test",
-        batch_size=batch_size,
-        device=torch_device,
-        shuffle=False,
-    )
-    print(f"Test samples: {len(test_loader.dataset)}")
+    test_loader, torch_device = dataloader_factory("test", batch_size, torch_device, False)
+    # Get dataset size - assert dataset is Sized
+    assert isinstance(test_loader.dataset, Sized), "Dataset must be Sized to get length"
+    dataset_size = len(test_loader.dataset)
+    print(f"Test samples: {dataset_size}")
 
     print("\nEvaluating model on test set...")
-    metrics = evaluation_fn(
-        model=model,
-        data_loader=test_loader,
-        device=torch_device,
-        class_names=class_names,
-    )
+    metrics = evaluation_fn(model, test_loader, torch_device, class_names)
 
     return metrics
 
@@ -267,7 +260,7 @@ def run_checkpoint_evaluation_cli(
     model_builder: Callable[[dict, torch.device], torch.nn.Module],
     class_names: Sequence[str],
     dataloader_factory: Callable[
-        [str, int, torch.device, bool], tuple[DataLoader, torch.device]
+        [str, int, Union[torch.device, str, None], bool], tuple[DataLoader, torch.device]
     ],
     evaluation_fn: Callable[
         [torch.nn.Module, DataLoader, torch.device, Sequence[str]], dict

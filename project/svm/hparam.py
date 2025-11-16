@@ -8,7 +8,7 @@ from sklearn.svm import LinearSVC
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 
-from data import load_cifar10_data, prepare_split
+from data import load_cifar10_data
 from svm.constants import (
     PCA_PATH,
     GMM_PATH,
@@ -51,13 +51,8 @@ def load_pretrained_components():
     if isinstance(gmm_data, dict):
         if "sklearn_gmm" in gmm_data:
             gmm = gmm_data["sklearn_gmm"]
-        elif "torchgmm" in gmm_data:
-            print(
-                "ERROR: Old torchgmm format detected. Please re-run compute_fisher_vectors to regenerate with sklearn GMM."
-            )
-            return None, None
         else:
-            print(f"ERROR: Invalid GMM file format: {gmm_path}")
+            print(f"ERROR: Invalid GMM file format. Expected 'sklearn_gmm' key, got: {list(gmm_data.keys())}")
             return None, None
     else:
         # Direct sklearn GMM object
@@ -142,11 +137,15 @@ def main():
 
     # Prepare training and validation data
     print("Preparing training data...")
-    X_train, y_train = prepare_split(ds_dict, "train")
+    train_ds = ds_dict["train"]
+    X_train = [np.asarray(item["img"], dtype=np.float32) for item in train_ds]
+    y_train = np.array([item["label"] for item in train_ds])
     print(f"Training samples: {len(X_train)}")
 
     print("Preparing validation data...")
-    X_val, y_val = prepare_split(ds_dict, "validation")
+    val_ds = ds_dict["validation"]
+    X_val = [np.asarray(item["img"], dtype=np.float32) for item in val_ds]
+    y_val = np.array([item["label"] for item in val_ds])
     print(f"Validation samples: {len(X_val)}")
 
     # Load pre-trained components

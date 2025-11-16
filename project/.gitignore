@@ -6,6 +6,8 @@ __pycache__/
 .cache/
 .aim/
 .python-version
+project.egg-info/
+.venv/
 
 # Extracted features (large numpy arrays)
 .cache/features/*.npy

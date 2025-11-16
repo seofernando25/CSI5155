@@ -5,7 +5,6 @@ from .datasets import (
     get_cifar10_dataloader,
     get_cifar10_split,
     load_cifar10_data,
-    prepare_split,
 )
 
 
@@ -47,5 +46,4 @@ __all__ = [
     "get_cifar10_dataloader",
     "get_cifar10_split",
     "load_cifar10_data",
-    "prepare_split",
 ]

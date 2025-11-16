@@ -88,12 +88,10 @@ def run(model_path: str = SVM_CLASSIFIER_PATH):
     if isinstance(gmm_data, dict):
         if "sklearn_gmm" in gmm_data:
             gmm = gmm_data["sklearn_gmm"]
-        elif "torchgmm" in gmm_data:
-            raise ValueError(
-                "Old torchgmm format detected. Please re-run compute_fisher_vectors."
-            )
         else:
-            raise ValueError(f"Invalid GMM file format: {gmm_path}")
+            raise ValueError(
+                f"Invalid GMM file format. Expected 'sklearn_gmm' key, got: {list(gmm_data.keys())}"
+            )
     else:
         gmm = gmm_data
 

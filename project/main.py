@@ -48,28 +48,27 @@ def build_parser() -> argparse.ArgumentParser:
     svm_sub = svm_parser.add_subparsers(dest="svm_command", required=True)
     register_svm(svm_sub, _add_subcommand)
 
-    # AlexNet commands
-    from alexnet import register_subcommands as register_alexnet
+    # ScaledCNN commands
+    from scaledcnn import register_subcommands as register_scaledcnn
 
-    alexnet_parser = subparsers.add_parser("alexnet", help="AlexNet experiments")
-    alexnet_sub = alexnet_parser.add_subparsers(dest="alexnet_command", required=True)
-    register_alexnet(alexnet_sub)
-
-    # OverfitNet commands
-    from overfitnet import register_subcommands as register_overfitnet
-
-    overfit_parser = subparsers.add_parser(
-        "overfitnet", help="Over-parameterised AlexNet variants"
+    scaledcnn_parser = subparsers.add_parser(
+        "scaledcnn", help="ScaledCNN for double descent experiments"
     )
-    overfit_sub = overfit_parser.add_subparsers(dest="overfit_command", required=True)
-    register_overfitnet(overfit_sub)
+    scaledcnn_sub = scaledcnn_parser.add_subparsers(
+        dest="scaledcnn_command", required=True
+    )
+    register_scaledcnn(scaledcnn_sub)
 
-    # Data utilities
-    from data import register_subcommands as register_data
+    # Data utilities (optional - may not exist in archived deployments)
+    try:
+        from data import register_subcommands as register_data
 
-    data_parser = subparsers.add_parser("data", help="Dataset preparation utilities")
-    data_sub = data_parser.add_subparsers(dest="data_command", required=True)
-    register_data(data_sub)
+        data_parser = subparsers.add_parser("data", help="Dataset preparation utilities")
+        data_sub = data_parser.add_subparsers(dest="data_command", required=True)
+        register_data(data_sub)
+    except ImportError:
+        # Data module not available (e.g., in archived deployment without data folder)
+        pass
 
     return parser
 
@@ -86,7 +85,8 @@ def main(argv: Optional[List[str]] = None) -> None:
     if remainder:
         sys.argv = [sys.argv[0]] + remainder
 
-    entry(args)
+    if entry is not None:
+        entry(args)
 
 
 if __name__ == "__main__":

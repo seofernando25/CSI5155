@@ -1,7 +1,7 @@
 import time
 from pathlib import Path
 
-from common_net import summarize_classification_results
+from scaledcnn.evaluation import summarize_classification_results
 from data import get_cifar10_class_names, get_cifar10_split
 from svm.constants import SVM_CLASSIFIER_PATH
 from svm.model import ClassifierSVM

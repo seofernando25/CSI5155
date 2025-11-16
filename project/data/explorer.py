@@ -84,7 +84,9 @@ def load_dataset_info(dataset_path: Path) -> Dict[str, Any]:
     # Sample min and max over first up to 100 samples
     sample_images = [pil_to_np(ds[i][image_col]) for i in range(min(100, len(ds)))]
     # Ensure all are numpy arrays
-    sample_images = [img if isinstance(img, np.ndarray) else np.asarray(img) for img in sample_images]
+    sample_images = [
+        img if isinstance(img, np.ndarray) else np.asarray(img) for img in sample_images
+    ]
     sample_images_np = np.stack(sample_images)
     info["min_value"] = make_serializable(np.min(sample_images_np))
     info["max_value"] = make_serializable(np.max(sample_images_np))
@@ -94,11 +96,11 @@ def load_dataset_info(dataset_path: Path) -> Dict[str, Any]:
 def image_to_base64(image_data) -> str:
     """Convert image data to base64 PNG string, handling normalized [0,1] and [0,255] ranges."""
     arr = pil_to_np(image_data)
-    
+
     # Ensure it's a numpy array
     if not isinstance(arr, np.ndarray):
         arr = np.asarray(arr)
-    
+
     # Handle normalized [0,1] range: convert to [0,255]
     if arr.dtype in (np.float32, np.float64):
         if arr.max() <= 1.0:
@@ -106,10 +108,14 @@ def image_to_base64(image_data) -> str:
             arr = (arr * 255.0).astype(np.uint8)
         else:
             # In some other range, normalize to [0,255]
-            arr = ((arr - arr.min()) / (arr.max() - arr.min() + 1e-8) * 255).astype(np.uint8)
+            arr = ((arr - arr.min()) / (arr.max() - arr.min() + 1e-8) * 255).astype(
+                np.uint8
+            )
     elif arr.dtype != np.uint8:
         # Other integer types or non-uint8, normalize to [0,255]
-        arr = ((arr - arr.min()) / (arr.max() - arr.min() + 1e-8) * 255).astype(np.uint8)
+        arr = ((arr - arr.min()) / (arr.max() - arr.min() + 1e-8) * 255).astype(
+            np.uint8
+        )
 
     if arr.ndim == 2:
         pil_image = Image.fromarray(arr, mode="L")

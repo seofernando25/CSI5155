@@ -1,7 +1,7 @@
 import shutil
 from pathlib import Path
 
-from datasets import load_dataset
+from datasets import DatasetDict, load_dataset
 
 
 def download_dataset(repo_id: str, destination: Path, force: bool) -> None:
@@ -9,6 +9,7 @@ def download_dataset(repo_id: str, destination: Path, force: bool) -> None:
         shutil.rmtree(destination)
     destination.mkdir(parents=True, exist_ok=True)
     ds = load_dataset(repo_id)
+    assert isinstance(ds, DatasetDict), "ds must be a DatasetDict"
     ds.save_to_disk(str(destination))
 
 

@@ -4,7 +4,7 @@ import joblib
 import numpy as np
 from tqdm import tqdm
 
-from data import load_cifar10_data, prepare_split
+from data import load_cifar10_data
 from svm.constants import (
     PATCH_SIZE,
     STRIDE,
@@ -62,11 +62,11 @@ def main():
 
     # Prepare training data
     print("Preparing training data...")
-    X_train, y_train = prepare_split(ds_dict, "train")
-    print(f"Training samples: {len(X_train)}")
-
+    train_ds = ds_dict["train"]
     # Images from processed dataset are already float32 in [0,1]
-    X_train = [np.asarray(img, dtype=np.float32) for img in X_train]
+    X_train = [np.asarray(item["img"], dtype=np.float32) for item in train_ds]
+    y_train = np.array([item["label"] for item in train_ds])
+    print(f"Training samples: {len(X_train)}")
 
     # Extract patches
     print(f"\nExtracting patches (patch_size={PATCH_SIZE}, stride={STRIDE})...")

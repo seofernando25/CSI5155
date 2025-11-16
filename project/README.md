@@ -1,0 +1,1 @@
+uv run main.py scaledcnn train --k 4 --lr 0.047851 --weight-decay 0.002552 --epochs 500 --device cuda

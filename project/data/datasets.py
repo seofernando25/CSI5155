@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable, List, Optional, Sequence, Tuple
+from typing import List, Tuple
 
 import numpy as np
 import torch
@@ -12,20 +12,20 @@ from torch.utils.data import Dataset
 class CIFAR10Dataset(Dataset):
     def __init__(
         self,
-        images: Iterable[np.ndarray],
-        labels: Sequence[int],
+        dataset,
         transform=None,
     ) -> None:
-        self.images = list(images)
-        self.labels = list(labels)
+        self.dataset = dataset
         self.transform = transform
 
     def __len__(self) -> int:
-        return len(self.images)
+        return len(self.dataset)
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
-        image = self.images[idx]
-        label = int(self.labels[idx])
+        # Lazy loading from dataset (preserves train/val/test splits and label noise from process.py)
+        item = self.dataset[idx]
+        image = np.asarray(item["img"], dtype=np.float32)
+        label = int(item["label"])  # Label noise is already baked into train split
 
         if self.transform is not None:
             if image.dtype != np.uint8:
@@ -45,15 +45,9 @@ class CIFAR10Dataset(Dataset):
         return image, label
 
 
-def _resolve_dataset_path(dataset_root: Optional[Path]) -> Path:
-    if dataset_root is not None:
-        return Path(dataset_root)
+def load_cifar10_data():
     repo_root = Path(__file__).resolve().parents[1]
-    return repo_root / ".cache" / "processed_datasets" / "cifar10"
-
-
-def load_cifar10_data(dataset_root: Optional[Path] = None):
-    dataset_path = _resolve_dataset_path(dataset_root)
+    dataset_path = repo_root / ".cache" / "processed_datasets" / "cifar10"
 
     if not dataset_path.exists():
         raise FileNotFoundError(
@@ -61,14 +55,7 @@ def load_cifar10_data(dataset_root: Optional[Path] = None):
             "Please run: uv run python -m data.download (and then uv run python -m data.process)"
         )
 
-    return load_from_disk(str(dataset_path))
-
-
-def prepare_split(ds_dict, split: str):
-    ds = ds_dict[split]
-    images = [np.asarray(img) for img in ds["img"]]
-    labels = np.array(ds["label"])
-    return images, labels
+    return load_from_disk(str(dataset_path), keep_in_memory=True)
 
 
 CIFAR10_CLASS_NAMES: List[str] = [
@@ -89,9 +76,22 @@ def get_cifar10_class_names() -> List[str]:
     return CIFAR10_CLASS_NAMES.copy()
 
 
-def get_cifar10_split(split: str, dataset_root: Optional[Path] = None):
-    ds_dict = load_cifar10_data(dataset_root)
-    return prepare_split(ds_dict, split)
+def get_cifar10_split(split: str) -> Tuple[List[np.ndarray], np.ndarray]:
+    """Get CIFAR-10 split as list of images and labels for SVM evaluation."""
+    ds_dict = load_cifar10_data()
+    ds = ds_dict[split]
+    
+    images: List[np.ndarray] = []
+    labels: List[int] = []
+    for item in ds:
+        image = np.asarray(item["img"], dtype=np.float32)
+        # Keep as HWC format (not flattened) - model expects individual images
+        images.append(image)
+        labels.append(int(item["label"]))
+    
+    y = np.array(labels, dtype=np.int64)
+    
+    return images, y
 
 
 def get_cifar10_dataloader(
@@ -100,9 +100,9 @@ def get_cifar10_dataloader(
     device: torch.device | str | None = None,
     shuffle: bool = False,
     transform=None,
-    dataset_root: Optional[Path] = None,
 ):
-    images, labels = get_cifar10_split(split, dataset_root)
+    ds_dict = load_cifar10_data()
+    ds = ds_dict[split]
 
     if isinstance(device, str):
         torch_device = torch.device(device)
@@ -111,15 +111,19 @@ def get_cifar10_dataloader(
     else:
         torch_device = device
 
-    dataset = CIFAR10Dataset(images, labels, transform=transform)
+    dataset = CIFAR10Dataset(ds, transform=transform)
 
-    from common_net.training import build_dataloader
+    from torch.utils.data import DataLoader
 
-    data_loader = build_dataloader(
+    is_cuda = torch_device.type == "cuda"
+    data_loader = DataLoader(
         dataset,
         batch_size=batch_size,
-        device=torch_device,
         shuffle=shuffle,
+        num_workers=8,
+        pin_memory=is_cuda,
+        persistent_workers=is_cuda,
+        prefetch_factor=4 if is_cuda else 2,
     )
 
     return data_loader, torch_device

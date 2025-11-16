@@ -101,11 +101,11 @@ class ClassifierSVM:
 
     def score(self, X: List[np.ndarray], y: np.ndarray) -> float:
         predictions = self.predict(X)
-        return np.mean(predictions == y)
+        return float(np.mean(predictions == y))
 
     def save(self, filepath: str) -> None:
-        filepath = Path(filepath)
-        filepath.parent.mkdir(parents=True, exist_ok=True)
+        filepath_obj = Path(filepath)
+        filepath_obj.parent.mkdir(parents=True, exist_ok=True)
 
         # Save all components
         model_data = {
@@ -123,20 +123,20 @@ class ClassifierSVM:
         }
 
         # Use joblib for sklearn objects (more efficient for numpy arrays)
-        if filepath.suffix in [".joblib", ".pkl"]:
-            joblib.dump(model_data, filepath)
+        if filepath_obj.suffix in [".joblib", ".pkl"]:
+            joblib.dump(model_data, filepath_obj)
         else:
             # Default to .pkl if no extension
-            joblib.dump(model_data, str(filepath) + ".pkl")
+            joblib.dump(model_data, str(filepath_obj) + ".pkl")
 
     @classmethod
     def load(cls, filepath: str) -> "ClassifierSVM":
-        filepath = Path(filepath)
-        if not filepath.exists():
-            raise FileNotFoundError(f"Model file not found: {filepath}")
+        filepath_obj = Path(filepath)
+        if not filepath_obj.exists():
+            raise FileNotFoundError(f"Model file not found: {filepath_obj}")
 
         # Load model data
-        model_data = joblib.load(filepath)
+        model_data = joblib.load(filepath_obj)
 
         # Recreate model with saved hyperparameters
         hyperparams = model_data["hyperparameters"]
@@ -159,13 +159,9 @@ class ClassifierSVM:
         if isinstance(gmm_data, dict):
             if "sklearn_gmm" in gmm_data:
                 model.gmm = gmm_data["sklearn_gmm"]
-            elif "torchgmm" in gmm_data:
-                raise ValueError(
-                    "Old torchgmm format detected. Please re-run svm_compute_fisher_vectors to regenerate with sklearn GMM."
-                )
             else:
                 raise ValueError(
-                    f"Invalid GMM format in saved model: {gmm_data.keys()}"
+                    f"Invalid GMM format in saved model. Expected 'sklearn_gmm' key, got: {list(gmm_data.keys())}"
                 )
         else:
             # Direct sklearn GMM object

@@ -1,22 +1,63 @@
-\documentclass{scrartcl}
+\documentclass{article}
 \usepackage[utf8]{inputenc}
+\usepackage{float}
 \usepackage{amsmath}
-\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{array}
 \usepackage{booktabs}
-\usepackage{microtype}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage[colorlinks=true,citecolor=blue,linkcolor=blue]{hyperref}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning,fit}
+\usepackage{titling}
+\usepackage{amssymb}
 \usepackage{natbib}
-\usepackage[colorlinks=true,citecolor=blue,linkcolor=blue,urlcolor=blue]{hyperref}
-\usepackage{cleveref}
+ \geometry{
+ a4paper,
+ total={170mm,257mm},
+ left=20mm,
+ top=20mm,
+ }
 
-\usepackage[margin=1in]{geometry}
-
-\title{From Handcrafted Features to Double Descent on CIFAR-10}
-\author{Fernando Nogueira \\ Student ID: 300 195 829}
-\date{November 13, 2025}
+ \title{From Handcrafted Features to Double Descent on CIFAR-10}
+\author{
+    Fernando Berti Cruz Nogueira (abert036@uottawa.ca)
+}
+\date{November 2025}
+ 
+\usepackage{fancyhdr}
+\setlength{\headheight}{12.5pt}
+\addtolength{\topmargin}{-0.5pt}
+\fancypagestyle{plain}{%  the preset of fancyhdr 
+    \fancyhf{} % clear all header and footer fields
+    \fancyfoot[L]{\thedate}
+    \fancyhead[L]{CSI 5155 - Machine Learning, Project Report (Fall 2025)}
+}
+\makeatletter
+\def\@maketitle{%
+  \newpage
+  \null
+  \vskip 1em%
+  \begin{center}%
+  \let \footnote \thanks
+    {\LARGE \@title \par}%
+    \vskip 1em%
+    %{\large \@date}%
+  \end{center}%
+  \par
+  \vskip 1em}
+\makeatother
 
 \begin{document}
-
 \maketitle
+
+\noindent\begin{tabular}{@{}ll}
+    Student & \theauthor\\
+    Lecturer & Kathleen Fraser (kathleen.fraser@uottawa.ca)
+\end{tabular}
 
 \section{Introduction}
 
@@ -52,8 +93,10 @@ The project will be structure as a two-part experiment. First, a classical basel
 The CIFAR-10 dataset \cite{krizhevsky2009learning} is used, which consists of 60,000 32x32 color images across 10 class. The standard 50,000 image training set and 10,000 image test set are used.
 
 The data partitioning is done as follow:
-- The 50,000 image training set is split into a 40,000 image training set and a 10,000 image validation set
-- The official 10,000 image test set is held out and used only once at the project's conclusion to generate the results.
+\begin{itemize}
+    \item The 50,000 image training set is split into a 40,000 image training set and a 10,000 image validation set.
+    \item The official 10,000 image test set is held out and used only once at the project's conclusion to generate the results.
+\end{itemize}
 
 To amplify the double descent effect, as suggested by the literature, 20\% label noise is introduced to the 40,000 image training set. This is done by permanently replacing the true label for 8,000 randomly selected training images with a uniformly random wrong label. The 10,000 image validation set and test set remain with their original correct labels. All models will be trained on the noisy training set and evaluated on the clean validation and test set.
 
@@ -64,66 +107,110 @@ The classical baseline uses a Linear Support Vector Classifier (LinearSVC) train
 
 Patches of size $8 \times 8$ pixels are densely extracted with a stride of 4, yielding a regular grid of 49 overlapping patches per $32 \times 32$ image. Each patch is flattened into a 192-dimensional vector. Principal Component Analysis (PCA) with whitening is applied to reduce the patch descriptors to $D = 24$ dimensions. This value was selected as it retains approximately 96\% of the total variance. A Gaussian Mixture Model (GMM) with $K = 64$ components is then fitted to the PCA-reduced patches to model the distribution of local descriptors. The resulting Fisher Vector for each image is $2 \times D \times K = 3{,}072$-dimensional, encoding statistics relative to the GMM. The Fisher Vectors are standardized (zero mean, unit variance) and then used to train a LinearSVC with $L_2$ regularization and hinge loss.
 
-\subsection{Classical Baseline}
+\subsection{CNN Architecture}
 
-The classical baseline is a Linear Support Vector Clasifier (LinearSVC). The model won't be trained on raw pixels but on high-dimensional Fisher Vectors extracted from images patches, processed through a PCA reduction and a Gaussian Mixture Model step.
+To answer RQ2, a model-wise double descent curve is generated using a scaled $\text{ScaledCNN}(k)$ architecture, where layer widths scale with factor $k$. The architecture is visualized in \autoref{fig:scaledcnn}.
 
-A patch size of 8x8 with a stride of 4 was chosen.
-A PCA dimension of 24 was also chosen by search, as it explains 96.3\% of the variance.
-Fisher Vectors were trained using 64 components.
-
-
-C was tuned to X via grid search, with performance evaluated on the clean validation set
-
-\subsection{Models}
-
-We implemented an AlexNet-inspired CNN adapted for 32x32 inputs: three convolutional layers (with ReLU and max-pooling), followed by three fully connected layers, using dropout (0.5) for regularization. The model was trained with Adam optimizer and cross-entropy loss.
-
-As a baseline, ORB (Oriented FAST and Rotated BRIEF) features were extracted from each image (500 keypoints), flattened, and fed into an RBF-kernel SVM classifier.
-
-\subsection{Hyperparameter Tuning}
-
-Hyperparameters were tuned using Optuna on the validation set over 50 trials. For the CNN: learning rate (1e-3 to 1e-5), batch size (32-128), and dropout rate (0.2-0.5). For SVM: C (1e-2 to 1e2) and gamma (scale, 0.01). Early stopping was applied after 10 epochs without validation improvement.
-
-The training procedure used PyTorch on Google Colab, with 100 epochs for CNN and scikit-learn for SVM.
-
-\section{Results and Analysis}
-
-Both models were evaluated on accuracy and macro F1-score on the held-out test set. The CNN outperformed the SVM baseline substantially.
-
-\begin{table}[ht]
+\begin{figure}[ht]
 \centering
-\begin{tabular}{lcc}
-\toprule
-Model & Accuracy (\%) & F1-Score \\
-\midrule
-AlexNet CNN & 78.5 & 0.78 \\
-SVM + ORB & 52.3 & 0.51 \\
-\bottomrule
-\end{tabular}
-\caption{Test set performance comparison between models.}
-\label{tab:results}
-\end{table}
+\begin{tikzpicture}[
+    node distance=0.8cm,
+    conv/.style={draw=black, align=center},
+    norm/.style={ draw=black, align=center},
+    act/.style={ draw=black, align=center},
+    pool/.style={ draw=black, align=center},
+    linear/.style={ draw=black, align=center},
+    arrow/.style={->, thick, >=stealth},
+]
+    % Block 1
+    \node[conv] (conv1) {Conv2d\\$3 \to 16k$\\kernel\_size=3\\padding=1};
+    \node[norm, right=of conv1] (bn1) {BatchNorm};
+    \node[act, right=of bn1] (relu1) {ReLU};
+    \node[pool, right=of relu1] (pool1) {MaxPool};
+    
+    % Block 2
+    \node[conv, below=1.5cm of conv1] (conv2) {Conv2d\\$16k \to 32k$\\kernel\_size=3\\padding=1};
+    \node[norm, right=of conv2] (bn2) {BatchNorm};
+    \node[act, right=of bn2] (relu2) {ReLU};
+    \node[pool, right=of relu2] (pool2) {MaxPool};
+    
+    % Block 3
+    \node[conv, below=1.5cm of conv2] (conv3) {Conv2d\\$32k \to 64k$\\kernel\_size=3\\padding=1};
+    \node[norm, right=of conv3] (bn3) {BatchNorm};
+    \node[act, right=of bn3] (relu3) {ReLU};
+    \node[pool, right=of relu3] (pool3) {AdaptiveAvgPool};
+    
+    % Final layers
+    \node[below=1.5cm of conv3, minimum width=1.2cm] (flat) {Flatten};
+    \node[linear, right=of flat] (linear) {Linear\\$64k \to 10$};
+    
+    % Arrows within blocks
+    \draw[arrow] (conv1) -- (bn1);
+    \draw[arrow] (bn1) -- (relu1);
+    \draw[arrow] (relu1) -- (pool1);
+    
+    \draw[arrow] (conv2) -- (bn2);
+    \draw[arrow] (bn2) -- (relu2);
+    \draw[arrow] (relu2) -- (pool2);
+    
+    \draw[arrow] (conv3) -- (bn3);
+    \draw[arrow] (bn3) -- (relu3);
+    \draw[arrow] (relu3) -- (pool3);
+    
+    \draw[arrow] (pool3) -- (flat);
+    \draw[arrow] (flat) -- (linear);
+    
+    % Vertical connections between blocks
+    \draw[arrow] (pool1) -- (conv2);
+    \draw[arrow] (pool2) -- (conv3);
+    
+    % Input
+    \node[left=0.5cm of conv1, align=center] (input) {Input\\$32 \times 32 \times 3$};
+    \draw[arrow] (input) -- (conv1);
+    
+    % Output
+    \node[right=0.5cm of linear, align=center] (output) {Output\\10 classes};
+    \draw[arrow] (linear) -- (output);
+\end{tikzpicture}
+\caption{Architecture of $\text{ScaledCNN}(k)$.}
+\label{fig:scaledcnn}
+\end{figure}
 
-% Figure \ref{fig:example} shows a sample training/validation curve for the CNN, illustrating mild overfitting after epoch 60.
+The procedure is as follows:
 
-% \begin{figure}[h]
-% \centering
-% \includegraphics[width=0.6\textwidth]{example.png}
-% \caption{Training and validation accuracy curves for the AlexNet CNN.}
-% \label{fig:example}
-% \end{figure}
+\subsubsection{Hyperparameter Tuning}
 
-The confusion matrix for the CNN revealed higher errors on visually similar classes (e.g., cat vs. dog), while SVM struggled across all classes due to limited feature discriminability. These results confirm the hypothesis, with the CNN reducing misclassifications by approximately 26\%.
+A single, medium-sized model is selected. Hyperparameters such as learning rate, weight decay, and momentum are tuned on the noisy training set and evaluated on the clean validation set with Optuna.
 
-\section{Limitations}
+These hyperparameters are then fixed for all other values of $k$.
 
-The CIFAR-10 images are low-resolution (32x32), potentially underutilizing ORB's strengths on larger images. The SVM baseline may not scale well with feature dimensionality. Additionally, training was limited to available compute resources, preventing exploration of deeper architectures. Future work could incorporate transfer learning from ImageNet-pretrained models or advanced augmentation techniques.
+\subsubsection{Training}
 
-\section{Conclusion}
+A series of models with varying $k$ (1, 2, 4, 8, 16, 32, 64) are trained from scratch on the noisy training set and evaluated on the clean validation set for a fixed, large number of epochs to ensure all models including large ones have sufficient time to interpolate the data.
 
-This project demonstrated the superiority of CNN-based automatic feature extraction over handcrafted ORB features with SVM for CIFAR-10 classification, achieving 78.5\% accuracy versus 52.3\%. These findings underscore the transformative impact of deep learning in computer vision, though classical methods remain relevant for interpretability.
+\subsubsection{Data Collection}
 
+For each trained model $k$, the final test error on the 10,000 image clean test set is recorded. This data is used to plot the Test Error vs. Model Capacity, which is hypothesized to reveal the double descent curve.
+
+\subsection{Analysis}
+
+To conduct a thorough analysis, we will be using two different methods:
+
+\subsubsection{Statistical Significance}
+
+TODO
+
+\subsubsection{Error Analysis}
+
+A full $10\times10$ confusion matrix will be generated for the three key models: the classical SVM baseline, the medium-sized CNN (at error peak), and the over-parametrized CNN (in the second descent).
+
+These matrices will be qualitatively analyzed to identify patterns such as identifying inter-class confusions.
+
+\subsection{Results and Analysis}
+
+FOO
+
+\clearpage
 \bibliographystyle{plain}
 \bibliography{bibliography}
 

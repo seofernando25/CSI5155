@@ -1,18 +1,20 @@
 import torch
 
-from common_net import run_checkpoint_evaluation_cli
+from scaledcnn.evaluation import run_checkpoint_evaluation_cli
 from data import get_cifar10_class_names, get_cifar10_dataloader
-from overfitnet.model import OverfitAlexNet
+from scaledcnn.model import ScaledCNN
 
 
 def build_model_from_checkpoint(checkpoint, device):
     config = checkpoint.get(
         "config",
         {
+            "k": 1,
             "num_classes": 10,
         },
     )
-    model = OverfitAlexNet(
+    model = ScaledCNN(
+        k=config.get("k", 1),
         num_classes=config.get("num_classes", 10),
     )
     model.load_state_dict(checkpoint["model_state_dict"])
@@ -22,13 +24,13 @@ def build_model_from_checkpoint(checkpoint, device):
 
 
 def run(
-    model_path: str = ".cache/models/overfitnet.pth",
+    model_path: str = ".cache/models/scaledcnn.pth",
     batch_size: int = 128,
     device: str | None = None,
 ):
     extracted_config: dict[str, object] | None = None
 
-    def _model_builder(checkpoint: dict, device_obj: torch.device) -> OverfitAlexNet:
+    def _model_builder(checkpoint: dict, device_obj: torch.device) -> ScaledCNN:
         nonlocal extracted_config
         model, config = build_model_from_checkpoint(checkpoint, device_obj)
         extracted_config = config
@@ -36,7 +38,8 @@ def run(
 
     def _on_checkpoint_loaded(_checkpoint: dict) -> None:
         if extracted_config is not None:
-            print("Configuration: BatchNorm=enabled")
+            k = extracted_config.get("k", 1)
+            print(f"Configuration: k={k}")
 
     class_names = get_cifar10_class_names()
 
@@ -48,7 +51,7 @@ def run(
         class_names=class_names,
         dataloader_factory=get_cifar10_dataloader,
         on_checkpoint_loaded=_on_checkpoint_loaded,
-        missing_checkpoint_hint="Please train the model first: uv run python -m overfitnet.train",
+        missing_checkpoint_hint="Please train the model first: uv run python -m scaledcnn.train",
     )
 
     metrics["config"] = extracted_config
@@ -57,8 +60,8 @@ def run(
 
 
 def add_subparser(subparsers):
-    parser = subparsers.add_parser("eval", help="OverfitNet eval")
-    parser.add_argument("--model-path", default=".cache/models/overfitnet.pth")
+    parser = subparsers.add_parser("eval", help="ScaledCNN eval")
+    parser.add_argument("--model-path", default=".cache/models/scaledcnn.pth")
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--device", type=str, default=None)
 
