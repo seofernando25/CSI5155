@@ -13,6 +13,7 @@ from svm.constants import (
     N_COMPONENTS,
     RANDOM_STATE,
 )
+from utils import load_pca
 
 
 def main():
@@ -23,9 +24,8 @@ def main():
 
     # Load PCA to get dimension
     print(f"Loading PCA from: {PCA_PATH}")
-    pca_data = joblib.load(PCA_PATH)
-    pca = pca_data["pca"] if isinstance(pca_data, dict) else pca_data
-    pca_dim = pca.n_components
+    pca = load_pca(PCA_PATH)
+    pca_dim = int(pca.n_components)
     print(f"PCA dimension: {pca_dim}")
 
     np.random.seed(RANDOM_STATE)

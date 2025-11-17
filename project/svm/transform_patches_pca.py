@@ -9,7 +9,7 @@ from svm.constants import (
     PCA_PATH,
     PCA_PATCHES_PATH,
 )
-from utils import require_file
+from utils import require_file, load_pca
 
 
 def main():
@@ -31,14 +31,7 @@ def main():
 
     # Load PCA
     print(f"Loading pre-trained PCA from: {pca_path}")
-    pca_data = joblib.load(str(pca_path))
-    if isinstance(pca_data, dict) and "pca" in pca_data:
-        pca = pca_data["pca"]
-    elif hasattr(pca_data, "n_components"):  # Direct PCA object
-        pca = pca_data
-    else:
-        print(f"ERROR: Invalid PCA file format: {pca_path}")
-        return
+    pca = load_pca(pca_path)
 
     print(f"Loaded PCA with {pca.n_components} components")
 

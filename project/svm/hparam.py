@@ -17,47 +17,7 @@ from svm.constants import (
     N_COMPONENTS,
     RANDOM_STATE,
 )
-from utils import require_file
-
-
-def load_pretrained_components():
-    pca_path = require_file(
-        PCA_PATH,
-        hint="Train PCA first"
-    )
-    gmm_path = require_file(
-        GMM_PATH,
-        hint="Train GMM first"
-    )
-
-    # Load PCA
-    print(f"Loading PCA from: {pca_path}")
-    pca_data = joblib.load(str(pca_path))
-    if isinstance(pca_data, dict) and "pca" in pca_data:
-        pca = pca_data["pca"]
-    elif hasattr(pca_data, "n_components"):
-        pca = pca_data
-    else:
-        print(f"ERROR: Invalid PCA file format: {pca_path}")
-        return None, None
-
-    # Load GMM
-    print(f"Loading GMM from: {gmm_path}")
-    gmm_data = joblib.load(str(gmm_path))
-
-    # Extract sklearn GMM from dictionary
-    if isinstance(gmm_data, dict):
-        if "sklearn_gmm" in gmm_data:
-            gmm = gmm_data["sklearn_gmm"]
-        else:
-            print(f"ERROR: Invalid GMM file format. Expected 'sklearn_gmm' key, got: {list(gmm_data.keys())}")
-            return None, None
-    else:
-        # Direct sklearn GMM object
-        gmm = gmm_data
-
-    return pca, gmm
-
+from utils import require_file, load_pca, load_gmm
 
 def compute_fisher_vectors(images, pca, gmm):
     from skimage.feature import fisher_vector
@@ -126,11 +86,7 @@ def objective(trial, X_train_fv, y_train, X_val_fv, y_val):
 
 def main():
     # Load dataset
-    try:
-        ds_dict = load_cifar10_data()
-    except FileNotFoundError as exc:
-        print(f"ERROR: {exc}")
-        return
+    ds_dict = load_cifar10_data()
 
     # Prepare training and validation data
     train_ds = ds_dict["train"]
@@ -142,7 +98,14 @@ def main():
     y_val = np.array([item["label"] for item in val_ds])
 
     # Load pre-trained components
-    pca, gmm = load_pretrained_components()
+    pca = load_pca(require_file(
+        PCA_PATH,
+        hint="Train PCA first"
+    ))
+    gmm = load_gmm(require_file(
+        GMM_PATH,
+        hint="Train GMM first"
+    ))
 
     # Compute Fisher Vectors for training and validation sets
     X_train_fv = compute_fisher_vectors(X_train, pca, gmm)

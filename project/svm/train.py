@@ -18,7 +18,7 @@ from svm.constants import (
     SVM_C,
     RANDOM_STATE,
 )
-from utils import require_file
+from utils import require_file, load_pca, load_gmm
 
 
 def _load_requirements():
@@ -53,32 +53,11 @@ def run(model_path: str = SVM_CLASSIFIER_PATH):
 
     start_time = time.time()
 
-    pca_data = joblib.load(str(pca_path))
-    if isinstance(pca_data, dict) and "pca" in pca_data:
-        pca = pca_data["pca"]
-    elif hasattr(pca_data, "n_components"):
-        pca = pca_data
-    else:
-        raise ValueError(f"Invalid PCA file format: {pca_path}")
-
+    pca = load_pca(pca_path)
     fvs = joblib.load(str(fv_path))
     y_train = joblib.load(str(labels_path))
 
-    if len(fvs) != len(y_train):
-        raise ValueError(
-            f"Mismatch - Fisher Vectors has {len(fvs)} samples, but labels has {len(y_train)} samples"
-        )
-
-    gmm_data = joblib.load(str(gmm_path))
-    if isinstance(gmm_data, dict):
-        if "sklearn_gmm" in gmm_data:
-            gmm = gmm_data["sklearn_gmm"]
-        else:
-            raise ValueError(
-                f"Invalid GMM file format. Expected 'sklearn_gmm' key, got: {list(gmm_data.keys())}"
-            )
-    else:
-        gmm = gmm_data
+    gmm = load_gmm(gmm_path)
     model = ClassifierSVM(
         pca=pca,
         patch_size=PATCH_SIZE,

@@ -27,12 +27,7 @@ def run(model_path: str = SVM_CLASSIFIER_PATH):
     print("Model loaded successfully!")
 
     print("\nLoading CIFAR-10 test dataset...")
-    try:
-        ds_dict = load_cifar10_data()
-    except FileNotFoundError as exc:
-        print(f"ERROR: {exc}")
-        writer.close()
-        return None
+    ds_dict = load_cifar10_data()
 
     test_ds = ds_dict["test"]
     X_test = [np.asarray(item["img"], dtype=np.float32) for item in test_ds]

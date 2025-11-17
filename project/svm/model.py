@@ -123,12 +123,7 @@ class ClassifierSVM:
             "classifier": self.classifier,
         }
 
-        # Use joblib for sklearn objects (more efficient for numpy arrays)
-        if filepath_obj.suffix in [".joblib", ".pkl"]:
-            joblib.dump(model_data, filepath_obj)
-        else:
-            # Default to .pkl if no extension
-            joblib.dump(model_data, str(filepath_obj) + ".pkl")
+        joblib.dump(model_data, filepath_obj)
 
     @classmethod
     def load(cls, filepath: str) -> "ClassifierSVM":
@@ -139,33 +134,17 @@ class ClassifierSVM:
 
         # Recreate model with saved hyperparameters
         hyperparams = model_data["hyperparameters"]
-        # Handle backward compatibility: old models may not have stride
-        stride = hyperparams.get("stride", 8)  # Default to 8 for non-overlapping
-        # PCA is loaded from saved model, pca_dim will be set from it
         model = cls(
-            pca=model_data["pca"],  # Load PCA first
+            pca=model_data["pca"],
             patch_size=hyperparams["patch_size"],
-            stride=stride,
+            stride=hyperparams["stride"],
             n_components=hyperparams["n_components"],
             svm_C=hyperparams["svm_C"],
             random_state=hyperparams["random_state"],
         )
 
         # Restore trained components
-        gmm_data = model_data["gmm"]
-
-        # Handle GMM format: could be dict (with sklearn_gmm) or direct sklearn GMM
-        if isinstance(gmm_data, dict):
-            if "sklearn_gmm" in gmm_data:
-                model.gmm = gmm_data["sklearn_gmm"]
-            else:
-                raise ValueError(
-                    f"Invalid GMM format in saved model. Expected 'sklearn_gmm' key, got: {list(gmm_data.keys())}"
-                )
-        else:
-            # Direct sklearn GMM object
-            model.gmm = gmm_data
-
+        model.gmm = model_data["gmm"]
         model.classifier = model_data["classifier"]
 
         return model

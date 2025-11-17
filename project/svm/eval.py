@@ -17,12 +17,8 @@ def main():
     model = ClassifierSVM.load(str(model_path))
 
     # Load datasets
-    try:
-        X_train, y_train = get_cifar10_split("train")
-        X_test, y_test = get_cifar10_split("test")
-    except FileNotFoundError as exc:
-        print(f"ERROR: {exc}")
-        return
+    X_train, y_train = get_cifar10_split("train")
+    X_test, y_test = get_cifar10_split("test")
 
     # Evaluate model
     train_accuracy = model.score(X_train, y_train)

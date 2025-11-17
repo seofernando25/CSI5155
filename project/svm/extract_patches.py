@@ -21,16 +21,10 @@ def extract_patches_2d_stride(image, patch_size, stride):
         image = image[:, :, np.newaxis]
 
     i_h, i_w, n_channels = image.shape
-
-    # Calculate number of patches
     n_patches_h = (i_h - patch_h) // stride + 1
     n_patches_w = (i_w - patch_w) // stride + 1
     n_patches = n_patches_h * n_patches_w
-
-    # Pre-allocate output array
     patches = np.zeros((n_patches, patch_h, patch_w, n_channels), dtype=image.dtype)
-
-    # Extract patches
     patch_idx = 0
     for i in range(0, i_h - patch_h + 1, stride):
         for j in range(0, i_w - patch_w + 1, stride):
@@ -45,7 +39,6 @@ def extract_patches(images, patch_size: int, stride: int):
 
     for img in tqdm(images, desc="Extracting patches", leave=False):
         patches = extract_patches_2d_stride(img, patch_size, stride)
-        # Reshape and convert to float32 for memory efficiency
         descriptors_list.append(patches.reshape(len(patches), -1).astype(np.float32))
 
     return descriptors_list
@@ -54,16 +47,9 @@ def extract_patches(images, patch_size: int, stride: int):
 def main():
     # Load dataset
     print("Loading CIFAR-10 dataset...")
-    try:
-        ds_dict = load_cifar10_data()
-    except FileNotFoundError as exc:
-        print(f"ERROR: {exc}")
-        return
+    ds_dict = load_cifar10_data()
 
-    # Prepare training data
-    print("Preparing training data...")
     train_ds = ds_dict["train"]
-    # Images from processed dataset are already float32 in [0,1]
     X_train = [np.asarray(item["img"], dtype=np.float32) for item in train_ds]
     y_train = np.array([item["label"] for item in train_ds])
     print(f"Training samples: {len(X_train)}")
