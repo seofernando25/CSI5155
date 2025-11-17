@@ -1,5 +1,6 @@
 \section{Limitations}
 
-This study relies on the CIFAR-10 dataset and a synthetic uniform label noise model. To ensure the observed event is not an artifact of the low-resolution data or synthetic randomization, future work should validate these findings on other datasets like ImageNet \cite{krizhevsky2012imagenet} and naturally occurring label noise distributions. Specifically, to confirm the scaling laws proposed by Nakkiran et al. \cite{nakkiran2019deep}.
+This study relies on the CIFAR-10 dataset and a synthetic uniform label noise model. To exclude artifacts of low-resolution data or synthetic randomization, future work should validate these findings on high-dimensional datasets like ImageNet \cite{krizhevsky2012imagenet} and naturally occurring label noise distributions (instead of a synthetic uniform label noise model). This is necessary to confirm if the scaling laws proposed by Nakkiran et al. \cite{nakkiran2019deep} hold across diverse data modalities.
 
-Furthermore, this experiment only tested a plain CNN. Because model biases affect generalization \cite{belkin2019reconciling}, I would have to repeat this scaling study on other architecture (e.g., ResNets, Transformers) to see if model size behaves differently as more depth or attention is added, as hinted by recent large-scale results \cite{zhang2017understanding}.
+
+Furthermore, this experiment utilized a standard CNN. Because model biases affect generalization \cite{belkin2019reconciling}, future studies would have to repeat this scaling study on other architecture (e.g., ResNets, Transformers) to see if model size behaves differently as more depth or attention layers are added, as hinted by Zhang et al. \cite{zhang2017understanding}.

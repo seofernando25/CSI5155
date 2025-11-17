@@ -1,7 +1,7 @@
 \section{Conclusion}
 
-This project investigated generalization across the full capacity spectrum. The best over-parameterized CNN, $\text{ScaledCNN}(k=64)$ (76.55\% acc.), as expected, outperforms the classical SVM + Fisher Vector baseline (53.64\% acc.).
+This project investigated generalization across a wide range of model capacities. The over-parameterized $\text{ScaledCNN}(k=64)$ (76.55\% accuracy) significantly outperforms the classical SVM + Fisher Vector baseline (53.64\% accuracy).
 
-The $\text{ScaledCNN}(k)$ family exhibits the full model-wise double descent curve: accuracy falls to the interpolation threshold at $k=4$ before climbing again in the over-parameterized regime, where implicit regularization yields qualitatively better error patterns. For example, `bird'$\to$`airplane' confusions fall sharply.
+The $\text{ScaledCNN}(k)$ family reproduces the full model-wise double descent curve: test accuracy drops to the interpolation threshold at $k=4$ before recovering in the over-parameterized regime. The "second descent" yields superior decision boundaries, shown by a reduction in specific inter-class confusion errors, such as `bird'$\to$`airplane' confusions.
 
-Together, these findings reconcile classical and modern generalization theory and show that, when properly regularized, scaling can deliver both higher accuracy and cleaner decision boundaries.
+These findings demonstrate that model scaling, coupled with implicit regularization, can deliver both higher accuracy and more robust inter-class discrimination.
