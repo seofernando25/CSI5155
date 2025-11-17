@@ -1,0 +1,25 @@
+\section{Introduction}
+
+For decades, the field of computer vision was dominated by a paradigm of feature engineering. Success on tasks like image classification involved crafting sophisticated handcrafted representations (e.g., SIFT, ORB, Fisher Vectors) that could be effectively processed by classical machine learning models like Support Vector Machines (SVMs). This classical paradigm was governed by the foundational bias-variance trade-off, which describes a U-shaped curve for generalization: models that were too small would underfit, while models that were too large would overfit. The primary goal of a researcher was to find a "medium" complexity model at the precise bottom of this curve. This project's SVM + Fisher Vector baseline represents this classical, feature-engineered approach.
+
+The deep learning revolution, catalyzed by models like AlexNet \cite{krizhevsky2012imagenet}, rendered this paradigm obsolete by learning hierarchical features automatically from raw data. This shift, however, created a theoretical paradox. Modern networks are massively over-parameterized and can often possess "far more trainable model parameters than the number of samples" \cite{zhang2017understanding} they are trained on. According to classical U-shaped theory, these models should overfit catastrophically. The foundational 2017 paper, "Understanding Deep Learning Requires Re-Thinking Generalization," proved that these networks have sufficient "effective capacity... for memorizing the entire data set," and can even be trained to achieve 0\% training error on "completely random labels" \cite{zhang2017understanding}. This poses a central question: If deep networks have the demonstrated capacity to memorize random noise, why do they still manage to find solutions that generalize well on real data?
+
+A leading hypothesis that attempts to resolve this paradox is the "double descent" phenomenon \cite{belkin2019reconciling}, which suggests that the classical U-shaped curve is merely the first part of a larger, more complex curve. As model capacity increases, the test error is hypothesized to follow a new curve:
+
+\begin{itemize}
+    \item The underparameterized regime, in which test error decreases (the classical "first descent").
+    \item The interpolation threshold: the point at which the model becomes just large enough to perfectly fit the training data. Here, the test error spikes (the classical "overfitting peak").
+    \item The overparameterized regime, in which as model capacity continues to increase beyond this threshold, the test error paradoxically decreases again (the "second descent") \cite{nakkiran2019deep}.
+\end{itemize}
+
+In the modern over-parameterized regime, many solutions exist that can achieve zero training error. Gradient-based optimizers are believed to act as an implicit regularizer \cite{zhang2017understanding}, biasing the optimization toward finding simpler, smoother solutions, which in turn generalize better. This project investigates the full spectrum of model generalization, from the classical regime to the modern over-parameterized one, using the CIFAR-10 dataset \cite{krizhevsky2009learning}.
+
+The investigation is guided by the following research questions:
+
+\begin{itemize}
+    \item RQ1: How does the performance of a strong classical baseline (SVM + Fisher Vectors) compare to a modern, over-parameterized convolutional neural network (CNN) \cite{krizhevsky2012imagenet}?
+    \item RQ2: Can a model-wise double descent curve be experimentally induced by systematically scaling the capacity (i.e., width) of a CNN architecture \cite{nakkiran2019deep}, and if so, where does the interpolation peak occur?
+    \item RQ3: What are the qualitative and quantitative differences in generalization between the classical SVM, a critically-parameterized CNN (at the error peak), and an over-parameterized CNN (in the second descent)?
+\end{itemize}
+
+I hypothesize that (1) the optimized over-parameterized CNN will statistically and significantly outperform the SVM baseline; (2) by scaling model width, the full double descent curve will be observed, with test error peaking at the interpolation threshold before declining again; and (3) over-parameterized models will demonstrate superior inter-class discrimination (e.g., 'cat' vs. 'dog') than simpler models.

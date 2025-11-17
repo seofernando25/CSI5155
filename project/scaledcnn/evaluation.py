@@ -17,7 +17,6 @@ from sklearn.metrics import (
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-
 def resolve_torch_device(device: str | None) -> torch.device:
     return (
         torch.device(device)
@@ -286,3 +285,4 @@ def run_checkpoint_evaluation_cli(
                 f"Model file not found at {model_path_obj}. {missing_checkpoint_hint}"
             ) from exc
         raise
+

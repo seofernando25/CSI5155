@@ -115,6 +115,7 @@ def run_training_loop(
     ] = None,
     train_progress_desc: str = "Training",
     val_progress_desc: str = "Validating",
+    resume: bool = True,
 ) -> TrainingLoopResult:
     checkpoint_path = Path(checkpoint_path)
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
@@ -124,8 +125,32 @@ def run_training_loop(
     final_train_acc = 0.0
     final_val_loss = 0.0
     final_val_acc = 0.0
+    start_epoch = 1
 
-    for epoch in range(1, epochs + 1):
+    # Try to load checkpoint if it exists and resume is enabled
+    if resume and checkpoint_path.exists():
+        print(f"\nFound checkpoint at {checkpoint_path}, loading...")
+        try:
+            checkpoint = torch.load(str(checkpoint_path), map_location=device)
+            model.load_state_dict(checkpoint["model_state_dict"])
+            optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+            start_epoch = checkpoint.get("epoch", 1) + 1  # Start from next epoch
+            best_val_acc = checkpoint.get("val_acc", 0.0)
+            print(
+                f"Resumed from epoch {checkpoint.get('epoch', 1)} "
+                f"(val_acc={best_val_acc:.4f}, train_acc={checkpoint.get('train_acc', 0.0):.4f})"
+            )
+            print(f"Continuing training from epoch {start_epoch}...")
+        except Exception as e:
+            print(f"Warning: Failed to load checkpoint: {e}")
+            print("Starting training from scratch...")
+            start_epoch = 1
+    elif checkpoint_path.exists() and not resume:
+        print(f"Checkpoint exists at {checkpoint_path} but resume=False, starting from scratch...")
+    else:
+        print("No checkpoint found, starting training from scratch...")
+
+    for epoch in range(start_epoch, epochs + 1):
         print(f"\nEpoch {epoch}/{epochs}")
 
         train_loss, train_acc = train_epoch(

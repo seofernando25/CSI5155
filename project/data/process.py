@@ -29,13 +29,13 @@ def process_dataset(src_dir: Path, dst_dir: Path) -> None:
     rng = np.random.RandomState(RANDOM_SEED)
     indices = rng.permutation(len(train_ds))
 
-    split_idx = int(len(train_ds) * 0.8)
+    noise_rate = 0.2
+    split_idx = int(len(train_ds) * (1 - noise_rate))
     train_split = train_ds.select(indices[:split_idx])
     val_split = train_ds.select(indices[split_idx:])
 
     print(f"Split training set: {len(train_split)} train, {len(val_split)} validation")
 
-    noise_rate = 0.2
     num_corrupt = int(len(train_split) * noise_rate)
     labels = np.array(train_split["label"])
     corrupt_indices = rng.choice(len(train_split), size=num_corrupt, replace=False)

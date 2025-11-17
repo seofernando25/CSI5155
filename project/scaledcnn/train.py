@@ -27,6 +27,7 @@ def run(
     model_path: str | None = None,
     k: int = 1,
     device: str | None = None,
+    resume: bool = True,
 ):
     epochs = 500
     batch_size = 128
@@ -153,6 +154,7 @@ def run(
         checkpoint_path=model_path,
         writer=writer,
         checkpoint_extra=_checkpoint_extra,
+        resume=resume,
     )
 
     elapsed = time.time() - start_time
@@ -196,12 +198,18 @@ def add_subparser(subparsers):
     )
     parser.add_argument("--k", type=int, default=1, help="Scaling factor k")
     parser.add_argument("--device", type=str, default=None)
+    parser.add_argument(
+        "--no-resume",
+        action="store_true",
+        help="Start training from scratch even if checkpoint exists",
+    )
 
     def _entry(args):
         return run(
             model_path=args.model_path,
             k=args.k,
             device=args.device,
+            resume=not args.no_resume,
         )
 
     parser.set_defaults(entry=_entry)

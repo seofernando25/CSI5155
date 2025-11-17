@@ -1,0 +1,110 @@
+\section{Results and Analysis}
+
+\subsection{Experiment 1: Classical Baseline Performance}
+
+The SVM + Fisher Vector baseline achieves a test accuracy of 53.64\% (\autoref{tab:svm_performance}). The confusion matrix in \autoref{fig:svm_confusion} shows the model struggles on fine-grained animal classes, such as 'cat' (32.6\% recall) and 'bird' (38.1\%). Errors are structured: trucks are confused with automobiles (15.9\%), and cats with dogs (19.1\%). This is consistent with a reliance on global texture cues that fail to separate visually similar classes.
+
+\begin{table}[H]
+    \centering
+    \caption{Test-set performance of the SVM + Fisher Vector baseline.}
+    \label{tab:svm_performance}
+    \begin{tabular}{lccc}
+        \toprule
+        Model & Accuracy (\%) & Macro F1 & Weighted F1 \\
+        \midrule
+        SVM + Fisher Vectors & 53.64 & 0.53 & 0.53 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/SVM__test__confusion_matrix.pdf}
+    \caption{Normalized confusion matrix for the SVM + Fisher Vector baseline on the CIFAR-10 test set.}
+    \label{fig:svm_confusion}
+\end{figure}
+
+\subsection{Experiment 2: Epoch-Wise and Model-Wise Double Descent}
+
+The $\text{ScaledCNN}(k)$ family successfully exhibits both epoch-wise and model-wise double descent.
+
+A pronounced epoch-wise double descent is visible in wider models ($k \ge 8$), as shown in \autoref{fig:scaledcnn_error_curves}. For $k=16$, validation error decreases, spikes (to $\approx 0.70$) once the model memorizes the noisy training set (train error $\to 0$ around epoch 100), and then decreases again (the "second descent"), settling at $\approx 0.29$ as the optimizer finds a better-generalizing solution \cite{nakkiran2019deep}.
+
+Model-wise double descent is confirmed by the final test set performance (\autoref{tab:scaledcnn_test_performance} and \autoref{fig:capacity_curve}). Test accuracy first decreases from $k=1$ (69.28\%) to a trough at $k=4$ (67.84\%). This point represents the "critically-parameterized" model at the interpolation threshold. As model capacity increases beyond this point, test accuracy paradoxically recovers, beginning the "second descent" and climbing to its highest point at $k=64$ (76.55\%).
+
+\begin{table}[H]
+    \centering
+    \caption{Test-set performance of $\text{ScaledCNN}(k)$ on CIFAR-10.}
+    \label{tab:scaledcnn_test_performance}
+    \begin{tabular}{cccc}
+        \toprule
+        Width $k$ & Trainable Params & Accuracy (\%) & Macro F1 \\
+        \midrule
+        1  & $2.4\times 10^{4}$  & 69.28 & 0.69 \\
+        2  & $9.5\times 10^{4}$  & 67.87 & 0.68 \\
+        4  & $3.7\times 10^{5}$  & 67.84 & 0.67 \\
+        8  & $1.5\times 10^{6}$  & 68.43 & 0.66 \\
+        16 & $5.9\times 10^{6}$  & 71.02 & 0.71 \\
+        32 & $2.4\times 10^{7}$  & 74.29 & 0.74 \\
+        64 & $9.4\times 10^{7}$  & 76.55 & 0.77 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/scaledcnn_capacity_vs_performance.pdf}
+    \caption{Test accuracy and macro F1 vs. trainable parameters (log scale) for $\text{ScaledCNN}(k)$, showing model-wise double descent.}
+    \label{fig:capacity_curve}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.45\textwidth]{figures/scaledcnn_k4_error_curve.pdf}
+    \includegraphics[width=0.45\textwidth]{figures/scaledcnn_k16_error_curve.pdf}
+    \caption{Epoch-wise train/validation error for $k=4$ (left) and $k=16$ (right). The $k=16$ model shows a clear "dip and recovery" (epoch-wise double descent) after interpolating the noisy data (train error $\to 0$).}
+    \label{fig:scaledcnn_error_curves}
+\end{figure}
+
+\subsection{Statistical and Error Analysis (RQ3)}
+
+\subsubsection{Statistical Significance}
+McNemar's test \cite{demsar2006statistical} was used to assess the statistical significance of performance differences between key models (\autoref{tab:mcnemar_results}). The best over-parameterized model, $\text{ScaledCNN}(k=64)$, decisively outperforms the classical SVM baseline ($p \approx 0$). This confirms the first hypothesis.
+
+More central to RQ2, the test confirms the shape of the double descent curve. The initial drop in accuracy from $k=1$ (69.28\%) to $k=2$ (67.87\%) is statistically significant ($p = 0.0037$). The accuracy difference between $k=2$ and $k=4$ is not significant ($p = 0.967$), confirming $k=2/k=4$ as the accuracy trough. The "second descent" represents a real, significant recovery: the accuracy gains from $k=8 \to k=16$, $k=16 \to k=32$, and $k=32 \to k=64$ are all statistically significant ($p < 0.001$).
+
+\begin{table}[H]
+    \centering
+    \caption{McNemar's test results for key model comparisons on the 10,000-sample test set.}
+    \label{tab:mcnemar_results}
+    \begin{tabular}{llcc}
+        \toprule
+        Model A & Model B & p-value & Significant (p < 0.05)? \\
+        \midrule
+        SVM & $\text{ScaledCNN}(k=1)$ & $6.56 \times 10^{-167}$ & Yes \\
+        SVM & $\text{ScaledCNN}(k=64)$ & $2.66 \times 10^{-314}$ & Yes \\
+        $\text{ScaledCNN}(k=1)$ & $\text{ScaledCNN}(k=2)$ & $3.69 \times 10^{-3}$ & Yes \\
+        $\text{ScaledCNN}(k=2)$ & $\text{ScaledCNN}(k=4)$ & $0.967$ & No \\
+        $\text{ScaledCNN}(k=4)$ & $\text{ScaledCNN}(k=8)$ & $0.206$ & No \\
+        $\text{ScaledCNN}(k=8)$ & $\text{ScaledCNN}(k=16)$ & $1.24 \times 10^{-7}$ & Yes \\
+        $\text{ScaledCNN}(k=16)$ & $\text{ScaledCNN}(k=32)$ & $2.34 \times 10^{-12}$ & Yes \\
+        $\text{ScaledCNN}(k=32)$ & $\text{ScaledCNN}(k=64)$ & $7.92 \times 10^{-10}$ & Yes \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{Qualitative Error Analysis}
+
+Qualitative analysis of the confusion matrices (\autoref{fig:svm_confusion} and \autoref{fig:scaledcnn_confusions}) answers RQ3 and confirms the third hypothesis. The SVM baseline (\autoref{fig:svm_confusion}) struggles with visually similar classes, showing high confusion between 'cat' and 'dog' (19.1\% and 17.4\% respectively).
+
+This confusion persists in the critically-parameterized $\text{ScaledCNN}(k=4)$ model (\autoref{fig:scaledcnn_confusions}). This model, at the error peak, learns coarse features that cause it to misclassify 'bird' as 'airplane' 18.5\% of the time, even more than the SVM (10.3\%).
+
+In contrast, the over-parameterized $\text{ScaledCNN}(k=64)$ (\autoref{fig:scaledcnn_confusions}) demonstrates superior generalization. This model, from the "second descent," resolves this ambiguity, confusing 'bird' for 'airplane' only 6.2\% of the time. Similarly, its confusion of 'cat' $\to$ 'dog' (10.6\%) and 'dog' $\to$ 'cat' (14.4\%) is lower than both the $k=4$ and SVM models. This supports the hypothesis that the implicit regularization of the over-parameterized regime finds models that learn more robust, discriminative features.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.45\textwidth]{figures/scaledcnn_k4_test_confusion_matrix.pdf}
+    \includegraphics[width=0.45\textwidth]{figures/scaledcnn_k64_test_confusion_matrix.pdf}
+    \caption{Normalized confusion matrices for the "peak error" model $\text{ScaledCNN}(k=4)$ (left) and the "second descent" model $\text{ScaledCNN}(k=64)$ (right).}
+    \label{fig:scaledcnn_confusions}
+\end{figure}

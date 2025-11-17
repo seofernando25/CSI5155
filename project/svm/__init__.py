@@ -1,4 +1,4 @@
-from . import benchmark, train
+from . import benchmark, train, confusion_matrix, report
 
 SVM_SUBCOMMANDS = {
     "extract-patches": "svm.extract_patches:main",
@@ -15,3 +15,5 @@ def register_subcommands(subparsers, add_subcommand):
         add_subcommand(subparsers, cmd, f"SVM {cmd.replace('-', ' ')}", entry)
     train.add_subparser(subparsers)
     benchmark.add_subparser(subparsers)
+    confusion_matrix.add_subparser(subparsers)
+    report.add_subparser(subparsers)
