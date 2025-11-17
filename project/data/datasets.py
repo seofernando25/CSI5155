@@ -7,6 +7,8 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
+from device import device
+
 
 class CIFAR10Dataset(Dataset):
     def __init__(
@@ -169,19 +171,13 @@ def get_cifar10_split(split: str) -> Tuple[List[np.ndarray], np.ndarray]:
 def get_cifar10_dataloader(
     split: str,
     batch_size: int,
-    device: torch.device | str | None = None,
     shuffle: bool = False,
     transform=None,
 ):
     ds_dict = load_cifar10_data()
     ds = ds_dict[split]
 
-    if isinstance(device, str):
-        torch_device = torch.device(device)
-    elif device is None:
-        torch_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    else:
-        torch_device = device
+    torch_device = device
 
     dataset = CIFAR10Dataset(ds, transform=transform)
 

@@ -11,6 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from torch.utils.data import DataLoader, TensorDataset
 
+from device import device
 from scaledcnn.training import run_training_loop
 from scaledcnn.model import ScaledCNN
 
@@ -26,7 +27,6 @@ def set_seed(seed: int):
 def run(
     model_path: str | None = None,
     k: int = 1,
-    device: str | None = None,
     resume: bool = True,
 ):
     epochs = 500
@@ -53,15 +53,10 @@ def run(
     }
     writer.add_custom_scalars(layout)
 
-    torch_device = (
-        torch.device(device)
-        if device is not None
-        else torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    )
-    print(f"Using device: {torch_device}")
+    print(f"Using device: {device}")
 
     # Enable cuDNN benchmark for faster convolutions
-    if torch_device.type == "cuda":
+    if device.type == "cuda":
         torch.backends.cudnn.benchmark = True
 
     print("Pre-loading dataset into GPU memory...")
@@ -71,23 +66,23 @@ def run(
 
     train_images_np = np.load(dataset_path / "train_images.npy", mmap_mode="r")
     train_images = (
-        torch.from_numpy(train_images_np.copy()).permute(0, 3, 1, 2).to(torch_device)
+        torch.from_numpy(train_images_np.copy()).permute(0, 3, 1, 2).to(device)
     )
     train_labels_np = np.load(dataset_path / "train_labels.npy", mmap_mode="r")
-    train_labels = torch.from_numpy(train_labels_np.copy()).to(torch_device)
+    train_labels = torch.from_numpy(train_labels_np.copy()).to(device)
     print(
-        f"Loaded {len(train_images)} training images to {torch_device} ({train_images.element_size() * train_images.nelement() / 1024**2:.1f} MB)"
+        f"Loaded {len(train_images)} training images to {device} ({train_images.element_size() * train_images.nelement() / 1024**2:.1f} MB)"
     )
 
     print("Loading validation data...")
     val_images_np = np.load(dataset_path / "validation_images.npy", mmap_mode="r")
     val_images = (
-        torch.from_numpy(val_images_np.copy()).permute(0, 3, 1, 2).to(torch_device)
+        torch.from_numpy(val_images_np.copy()).permute(0, 3, 1, 2).to(device)
     )
     val_labels_np = np.load(dataset_path / "validation_labels.npy", mmap_mode="r")
-    val_labels = torch.from_numpy(val_labels_np.copy()).to(torch_device)
+    val_labels = torch.from_numpy(val_labels_np.copy()).to(device)
     print(
-        f"Loaded {len(val_images)} validation images to {torch_device} ({val_images.element_size() * val_images.nelement() / 1024**2:.1f} MB)"
+        f"Loaded {len(val_images)} validation images to {device} ({val_images.element_size() * val_images.nelement() / 1024**2:.1f} MB)"
     )
 
     train_dataset = TensorDataset(train_images, train_labels)
@@ -113,7 +108,7 @@ def run(
     model = ScaledCNN(
         k=k,
         num_classes=10,
-    ).to(torch_device)
+    ).to(device)
 
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -149,7 +144,6 @@ def run(
         val_loader=val_loader,
         criterion=criterion,
         optimizer=optimizer,
-        device=torch_device,
         epochs=epochs,
         checkpoint_path=model_path,
         writer=writer,
@@ -197,7 +191,6 @@ def add_subparser(subparsers):
         help="Model path (default: .cache/models/scaledcnn_k{k}.pth)",
     )
     parser.add_argument("--k", type=int, default=1, help="Scaling factor k")
-    parser.add_argument("--device", type=str, default=None)
     parser.add_argument(
         "--no-resume",
         action="store_true",
@@ -208,7 +201,6 @@ def add_subparser(subparsers):
         return run(
             model_path=args.model_path,
             k=args.k,
-            device=args.device,
             resume=not args.no_resume,
         )
 

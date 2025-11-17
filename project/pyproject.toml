@@ -1,11 +1,7 @@
-[build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "project"
 version = "0.1.0"
-description = "Add your description here"
+description = "CSI 5155 Project: From Classical CV to Double Descent"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -24,7 +20,3 @@ dependencies = [
     "tqdm>=4.67.1",
     "uvicorn>=0.38.0",
 ]
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["scaledcnn*", "svm*"]

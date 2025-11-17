@@ -5,8 +5,8 @@ import numpy as np
 import torch
 from sklearn.metrics import confusion_matrix
 
+from device import device
 from data import get_cifar10_class_names, get_cifar10_dataloader
-from scaledcnn.evaluation import resolve_torch_device
 from scaledcnn.model import ScaledCNN
 from visualization import plot_confusion_matrix
 
@@ -57,11 +57,9 @@ def run(
     model_path: str = ".cache/models/scaledcnn.pth",
     split: str = "test",
     batch_size: int = 128,
-    device: str | None = None,
     output_path: str | None = None,
 ):
-    torch_device = resolve_torch_device(device)
-    print(f"Using device: {torch_device}")
+    print(f"Using device: {device}")
 
     model_path_obj = Path(model_path)
     if not model_path_obj.exists():
@@ -70,18 +68,17 @@ def run(
         return None
 
     print(f"Loading model from: {model_path_obj}")
-    checkpoint = torch.load(str(model_path_obj), map_location=torch_device)
-    model, config = build_model_from_checkpoint(checkpoint, torch_device)
+    checkpoint = torch.load(str(model_path_obj), map_location=device)
+    model, config = build_model_from_checkpoint(checkpoint, device)
     print("Model loaded successfully!")
 
     k = config.get("k", 1)
     print(f"Model configuration: k={k}")
 
     print(f"\nLoading CIFAR-10 {split} dataset...")
-    data_loader, torch_device = get_cifar10_dataloader(
+    data_loader, _ = get_cifar10_dataloader(
         split=split,
         batch_size=batch_size,
-        device=torch_device,
         shuffle=False,
     )
     print(f"{split.capitalize()} samples: {len(data_loader.dataset)}")
@@ -93,8 +90,8 @@ def run(
     model.eval()
     with torch.no_grad():
         for images, labels in data_loader:
-            images = images.to(torch_device)
-            labels = labels.to(torch_device)
+            images = images.to(device)
+            labels = labels.to(device)
 
             outputs = model(images)
             _, predicted = torch.max(outputs.data, 1)
@@ -145,7 +142,6 @@ def add_subparser(subparsers):
         help="Dataset split to evaluate on",
     )
     parser.add_argument("--batch-size", type=int, default=128)
-    parser.add_argument("--device", type=str, default=None)
     parser.add_argument(
         "--output-path",
         type=str,
@@ -158,7 +154,6 @@ def add_subparser(subparsers):
             model_path=args.model_path,
             split=args.split,
             batch_size=args.batch_size,
-            device=args.device,
             output_path=args.output_path,
         )
 

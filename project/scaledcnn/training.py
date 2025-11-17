@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
+from device import device
 
 @dataclass
 class TrainingLoopResult:
@@ -26,7 +27,6 @@ def train_epoch(
     data_loader: DataLoader,
     criterion: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
-    device: torch.device,
     writer: Optional[SummaryWriter] = None,
     epoch: Optional[int] = None,
     progress_desc: str = "Training",
@@ -66,7 +66,6 @@ def validate_epoch(
     model: torch.nn.Module,
     data_loader: DataLoader,
     criterion: torch.nn.Module,
-    device: torch.device,
     writer: Optional[SummaryWriter] = None,
     epoch: Optional[int] = None,
     progress_desc: str = "Validating",
@@ -104,7 +103,6 @@ def run_training_loop(
     val_loader: DataLoader,
     criterion: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
-    device: torch.device,
     epochs: int,
     checkpoint_path: str | Path,
     writer: Optional[SummaryWriter] = None,
@@ -158,7 +156,6 @@ def run_training_loop(
             data_loader=train_loader,
             criterion=criterion,
             optimizer=optimizer,
-            device=device,
             writer=writer,
             epoch=epoch,
             progress_desc=train_progress_desc,
@@ -173,7 +170,6 @@ def run_training_loop(
             model=model,
             data_loader=val_loader,
             criterion=criterion,
-            device=device,
             writer=writer,
             epoch=epoch,
             progress_desc=val_progress_desc,

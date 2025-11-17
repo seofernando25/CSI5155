@@ -11,9 +11,9 @@ import torch
 from sklearn.metrics import classification_report
 from tensorboard.backend.event_processing import event_accumulator
 
+from device import device
 from data import get_cifar10_class_names, get_cifar10_dataloader
 from scaledcnn.eval import build_model_from_checkpoint
-from scaledcnn.evaluation import resolve_torch_device
 
 
 @dataclass
@@ -104,17 +104,14 @@ def _generate_classification_report(
     model_path: Path,
     split: str,
     batch_size: int,
-    device: str | None,
 ) -> Tuple[Dict, Dict]:
     class_names = get_cifar10_class_names()
-    torch_device = resolve_torch_device(device)
-    checkpoint = torch.load(str(model_path), map_location=torch_device)
-    model, config = build_model_from_checkpoint(checkpoint, torch_device)
+    checkpoint = torch.load(str(model_path), map_location=device)
+    model, config = build_model_from_checkpoint(checkpoint, device)
 
     data_loader, _ = get_cifar10_dataloader(
         split=split,
         batch_size=batch_size,
-        device=torch_device,
         shuffle=False,
     )
 
@@ -124,8 +121,8 @@ def _generate_classification_report(
 
     with torch.no_grad():
         for images, batch_labels in data_loader:
-            images = images.to(torch_device)
-            batch_labels = batch_labels.to(torch_device)
+            images = images.to(device)
+            batch_labels = batch_labels.to(device)
             outputs = model(images)
             batch_preds = torch.argmax(outputs, dim=1)
             predictions.extend(batch_preds.cpu().numpy())
@@ -205,7 +202,6 @@ def run(
     logdir: str | None = None,
     split: str = "test",
     batch_size: int = 256,
-    device: str | None = None,
     output_json: str | None = None,
     figure_path: str | None = None,
 ):
@@ -229,7 +225,6 @@ def run(
         model_path=model_path_obj,
         split=split,
         batch_size=batch_size,
-        device=device,
     )
 
     payload = {
@@ -272,7 +267,6 @@ def add_subparser(subparsers):
         help="Dataset split for evaluation.",
     )
     parser.add_argument("--batch-size", type=int, default=256)
-    parser.add_argument("--device", type=str, default=None)
     parser.add_argument(
         "--output-json",
         type=str,
@@ -292,7 +286,6 @@ def add_subparser(subparsers):
             logdir=args.logdir,
             split=args.split,
             batch_size=args.batch_size,
-            device=args.device,
             output_json=args.output_json,
             figure_path=args.figure_path,
         )

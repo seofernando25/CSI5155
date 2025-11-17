@@ -11,19 +11,22 @@ import joblib
 from tqdm import tqdm
 from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
+from device import device
 from scaledcnn.model import ScaledCNN
 
 
-def objective(trial, train_dataset, val_dataset, device, k: int = 4, epochs: int = 500):
+def objective(
+    trial, train_dataset, val_dataset, target_device, k: int = 4, epochs: int = 500
+):
     lr = trial.suggest_float("lr", 1e-4, 1e-1, log=True)
     weight_decay = trial.suggest_float("weight_decay", 1e-5, 1e-2, log=True)
     momentum = trial.suggest_float("momentum", 0.8, 0.99)
 
     # Enable cuDNN benchmark for faster convolutions
-    if device.type == "cuda":
+    if target_device.type == "cuda":
         torch.backends.cudnn.benchmark = True
 
-    model = ScaledCNN(k=k, num_classes=10).to(device)
+    model = ScaledCNN(k=k, num_classes=10).to(target_device)
 
     train_loader = DataLoader(
         train_dataset,
@@ -48,7 +51,7 @@ def objective(trial, train_dataset, val_dataset, device, k: int = 4, epochs: int
         momentum=momentum,
     )
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
-    use_amp = device.type == "cuda"
+    use_amp = target_device.type == "cuda"
     scaler = GradScaler("cuda") if use_amp else None
 
     best_val_acc = 0.0
@@ -117,14 +120,8 @@ def run(
     epochs: int = 500,
     n_trials: int = 50,
     n_jobs: int = 1,
-    device: str | None = None,
 ):
-    torch_device = (
-        torch.device(device)
-        if device is not None
-        else torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    )
-    print(f"Using device: {torch_device}")
+    print(f"Using device: {device}")
 
     print("Pre-loading dataset into GPU memory...")
     print("Loading training data...")
@@ -134,23 +131,23 @@ def run(
 
     train_images_np = np.load(dataset_path / "train_images.npy", mmap_mode="r")
     train_images = (
-        torch.from_numpy(train_images_np.copy()).permute(0, 3, 1, 2).to(torch_device)
+        torch.from_numpy(train_images_np.copy()).permute(0, 3, 1, 2).to(device)
     )
     train_labels_np = np.load(dataset_path / "train_labels.npy", mmap_mode="r")
-    train_labels = torch.from_numpy(train_labels_np.copy()).to(torch_device)
+    train_labels = torch.from_numpy(train_labels_np.copy()).to(device)
     print(
-        f"Loaded {len(train_images)} training images to {torch_device} ({train_images.element_size() * train_images.nelement() / 1024**2:.1f} MB)"
+        f"Loaded {len(train_images)} training images to {device} ({train_images.element_size() * train_images.nelement() / 1024**2:.1f} MB)"
     )
 
     print("Loading validation data...")
     val_images_np = np.load(dataset_path / "validation_images.npy", mmap_mode="r")
     val_images = (
-        torch.from_numpy(val_images_np.copy()).permute(0, 3, 1, 2).to(torch_device)
+        torch.from_numpy(val_images_np.copy()).permute(0, 3, 1, 2).to(device)
     )
     val_labels_np = np.load(dataset_path / "validation_labels.npy", mmap_mode="r")
-    val_labels = torch.from_numpy(val_labels_np.copy()).to(torch_device)
+    val_labels = torch.from_numpy(val_labels_np.copy()).to(device)
     print(
-        f"Loaded {len(val_images)} validation images to {torch_device} ({val_images.element_size() * val_images.nelement() / 1024**2:.1f} MB)"
+        f"Loaded {len(val_images)} validation images to {device} ({val_images.element_size() * val_images.nelement() / 1024**2:.1f} MB)"
     )
 
     train_dataset = TensorDataset(train_images, train_labels)
@@ -197,14 +194,14 @@ def run(
             # Use process ID to assign GPU consistently per process
             pid = multiprocessing.current_process().pid
             process_id = (pid if pid is not None else 0) % num_gpus
-            device = torch.device(f"cuda:{process_id}")
+            target_device = torch.device(f"cuda:{process_id}")
             train_ds = train_datasets_per_gpu[process_id]
             val_ds = val_datasets_per_gpu[process_id]
         else:
-            device = torch_device
+            target_device = device
             train_ds = train_dataset
             val_ds = val_dataset
-        return objective(trial, train_ds, val_ds, device, k=k, epochs=epochs)
+        return objective(trial, train_ds, val_ds, target_device, k=k, epochs=epochs)
 
     start_time = time.time()
     study.optimize(
@@ -276,9 +273,6 @@ def add_subparser(subparsers):
         default=1,
         help="Number of parallel jobs (default: 1, use 2-4 for GPU)",
     )
-    parser.add_argument(
-        "--device", type=str, default=None, help="Device (cuda/cpu, default: auto)"
-    )
 
     def _entry(args):
         return run(
@@ -286,7 +280,6 @@ def add_subparser(subparsers):
             epochs=args.epochs,
             n_trials=args.n_trials,
             n_jobs=args.n_jobs,
-            device=args.device,
         )
 
     parser.set_defaults(entry=_entry)

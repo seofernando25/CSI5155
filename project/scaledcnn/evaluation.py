@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-from typing import Callable, Optional, Sequence, Sized, Union
+from typing import Callable, Optional, Sequence, Sized
 
 import numpy as np
 import torch
@@ -17,14 +17,7 @@ from sklearn.metrics import (
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-def resolve_torch_device(device: str | None) -> torch.device:
-    return (
-        torch.device(device)
-        if device is not None
-        else torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    )
-
-
+from device import device
 def summarize_classification_results(
     labels: np.ndarray,
     predictions: np.ndarray,
@@ -144,7 +137,6 @@ def summarize_classification_results(
 def run_classification_evaluation(
     model: torch.nn.Module,
     data_loader: DataLoader,
-    device: torch.device,
     class_names: Sequence[str],
     criterion: nn.Module | None = None,
     progress_desc: str = "Evaluating",
@@ -204,18 +196,16 @@ def evaluate_model_checkpoint(
     checkpoint_path: str | Path,
     model_builder: Callable[[dict, torch.device], torch.nn.Module],
     batch_size: int,
-    device: str | None,
     class_names: Sequence[str],
     dataloader_factory: Callable[
-        [str, int, Union[torch.device, str, None], bool], tuple[DataLoader, torch.device]
+        [str, int, bool], tuple[DataLoader, torch.device]
     ],
     evaluation_fn: Callable[
-        [torch.nn.Module, DataLoader, torch.device, Sequence[str]], dict
+        [torch.nn.Module, DataLoader, Sequence[str]], dict
     ] = run_classification_evaluation,
     on_checkpoint_loaded: Optional[Callable[[dict], None]] = None,
 ) -> dict:
-    torch_device = resolve_torch_device(device)
-    print(f"Using device: {torch_device}")
+    print(f"Using device: {device}")
 
     model_path_obj = Path(checkpoint_path)
     if not model_path_obj.exists():
@@ -224,8 +214,8 @@ def evaluate_model_checkpoint(
         )
 
     print(f"Loading model from: {model_path_obj}")
-    checkpoint = torch.load(str(model_path_obj), map_location=torch_device)
-    model = model_builder(checkpoint, torch_device)
+    checkpoint = torch.load(str(model_path_obj), map_location=device)
+    model = model_builder(checkpoint, device)
 
     print("Model loaded successfully!")
     if "epoch" in checkpoint:
@@ -240,14 +230,14 @@ def evaluate_model_checkpoint(
         on_checkpoint_loaded(checkpoint)
 
     print("\nLoading CIFAR-10 test dataset...")
-    test_loader, torch_device = dataloader_factory("test", batch_size, torch_device, False)
+    test_loader, _ = dataloader_factory("test", batch_size, False)
     # Get dataset size - assert dataset is Sized
     assert isinstance(test_loader.dataset, Sized), "Dataset must be Sized to get length"
     dataset_size = len(test_loader.dataset)
     print(f"Test samples: {dataset_size}")
 
     print("\nEvaluating model on test set...")
-    metrics = evaluation_fn(model, test_loader, torch_device, class_names)
+    metrics = evaluation_fn(model, test_loader, class_names)
 
     return metrics
 
@@ -255,14 +245,13 @@ def evaluate_model_checkpoint(
 def run_checkpoint_evaluation_cli(
     model_path: str,
     batch_size: int,
-    device: str | None,
     model_builder: Callable[[dict, torch.device], torch.nn.Module],
     class_names: Sequence[str],
     dataloader_factory: Callable[
-        [str, int, Union[torch.device, str, None], bool], tuple[DataLoader, torch.device]
+        [str, int, bool], tuple[DataLoader, torch.device]
     ],
     evaluation_fn: Callable[
-        [torch.nn.Module, DataLoader, torch.device, Sequence[str]], dict
+        [torch.nn.Module, DataLoader, Sequence[str]], dict
     ] = run_classification_evaluation,
     on_checkpoint_loaded: Optional[Callable[[dict], None]] = None,
     missing_checkpoint_hint: str | None = None,
@@ -272,7 +261,6 @@ def run_checkpoint_evaluation_cli(
             checkpoint_path=model_path,
             model_builder=model_builder,
             batch_size=batch_size,
-            device=device,
             class_names=class_names,
             dataloader_factory=dataloader_factory,
             evaluation_fn=evaluation_fn,

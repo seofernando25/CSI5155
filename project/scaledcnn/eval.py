@@ -26,7 +26,6 @@ def build_model_from_checkpoint(checkpoint, device):
 def run(
     model_path: str = ".cache/models/scaledcnn.pth",
     batch_size: int = 128,
-    device: str | None = None,
 ):
     extracted_config: dict[str, object] | None = None
 
@@ -46,7 +45,6 @@ def run(
     metrics = run_checkpoint_evaluation_cli(
         model_path=model_path,
         batch_size=batch_size,
-        device=device,
         model_builder=_model_builder,
         class_names=class_names,
         dataloader_factory=get_cifar10_dataloader,
@@ -63,13 +61,11 @@ def add_subparser(subparsers):
     parser = subparsers.add_parser("eval", help="ScaledCNN eval")
     parser.add_argument("--model-path", default=".cache/models/scaledcnn.pth")
     parser.add_argument("--batch-size", type=int, default=128)
-    parser.add_argument("--device", type=str, default=None)
 
     def _entry(args):
         return run(
             model_path=args.model_path,
             batch_size=args.batch_size,
-            device=args.device,
         )
 
     parser.set_defaults(entry=_entry)

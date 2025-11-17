@@ -10,9 +10,9 @@ import numpy as np
 import torch
 from mlxtend.evaluate import mcnemar
 
+from device import device
 from data import get_cifar10_dataloader, get_cifar10_split
 from scaledcnn.confusion_matrix import build_model_from_checkpoint
-from scaledcnn.evaluation import resolve_torch_device
 from svm.constants import SVM_CLASSIFIER_PATH
 from svm.model import ClassifierSVM
 
@@ -45,19 +45,17 @@ def _compute_scaledcnn_predictions(
     batch_size: int,
 ) -> Tuple[np.ndarray, np.ndarray]:
     split = "test"
-    torch_device = resolve_torch_device(None)
-    print(f"[scaledcnn] Using device: {torch_device}")
+    print(f"[scaledcnn] Using device: {device}")
     if not spec.model_path.exists():
         raise FileNotFoundError(f"ScaledCNN checkpoint not found at {spec.model_path}")
 
-    checkpoint = torch.load(str(spec.model_path), map_location=torch_device)
-    model, _ = build_model_from_checkpoint(checkpoint, torch_device)
+    checkpoint = torch.load(str(spec.model_path), map_location=device)
+    model, _ = build_model_from_checkpoint(checkpoint, device)
     model.eval()
 
     data_loader, _ = get_cifar10_dataloader(
         split=split,
         batch_size=batch_size,
-        device=torch_device,
         shuffle=False,
     )
     total_samples = len(data_loader.dataset)
@@ -67,8 +65,8 @@ def _compute_scaledcnn_predictions(
     all_labels: List[np.ndarray] = []
     with torch.no_grad():
         for images, batch_labels in data_loader:
-            images = images.to(torch_device)
-            batch_labels = batch_labels.to(torch_device)
+            images = images.to(device)
+            batch_labels = batch_labels.to(device)
             outputs = model(images)
             preds = torch.argmax(outputs, dim=1)
             all_predictions.append(preds.cpu().numpy())
