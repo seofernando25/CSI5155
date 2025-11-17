@@ -82,9 +82,5 @@ def add_subparser(subparsers):
         default=SVM_CLASSIFIER_PATH,
         help="Path to the trained SVM model",
     )
-
-    def _entry(args):
-        return run(model_path=args.model_path)
-
-    parser.set_defaults(entry=_entry)
+    parser.set_defaults(entry=lambda args: run(model_path=args.model_path))
     return parser

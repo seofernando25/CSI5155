@@ -28,9 +28,5 @@ def run(k: int = 1) -> dict[str, int]:
 def add_subparser(subparsers):
     parser = subparsers.add_parser("info", help="Show ScaledCNN model details")
     parser.add_argument("-k", "--k", type=int, default=1, help="Scaling factor k")
-
-    def _entry(args):
-        return run(k=args.k)
-
-    parser.set_defaults(entry=_entry)
+    parser.set_defaults(entry=lambda args: run(k=args.k))
     return parser

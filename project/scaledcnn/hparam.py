@@ -121,10 +121,6 @@ def run(
     n_trials: int = 50,
     n_jobs: int = 1,
 ):
-    print(f"Using device: {device}")
-
-    print("Pre-loading dataset into GPU memory...")
-    print("Loading training data...")
     # Load directly from numpy files (much faster than PyArrow conversion)
     repo_root = Path(__file__).resolve().parents[1]
     dataset_path = repo_root / ".cache" / "processed_datasets" / "cifar10"
@@ -135,41 +131,25 @@ def run(
     )
     train_labels_np = np.load(dataset_path / "train_labels.npy", mmap_mode="r")
     train_labels = torch.from_numpy(train_labels_np.copy()).to(device)
-    print(
-        f"Loaded {len(train_images)} training images to {device} ({train_images.element_size() * train_images.nelement() / 1024**2:.1f} MB)"
-    )
 
-    print("Loading validation data...")
     val_images_np = np.load(dataset_path / "validation_images.npy", mmap_mode="r")
     val_images = (
         torch.from_numpy(val_images_np.copy()).permute(0, 3, 1, 2).to(device)
     )
     val_labels_np = np.load(dataset_path / "validation_labels.npy", mmap_mode="r")
     val_labels = torch.from_numpy(val_labels_np.copy()).to(device)
-    print(
-        f"Loaded {len(val_images)} validation images to {device} ({val_images.element_size() * val_images.nelement() / 1024**2:.1f} MB)"
-    )
 
     train_dataset = TensorDataset(train_images, train_labels)
     val_dataset = TensorDataset(val_images, val_labels)
 
-    print(f"\nInitializing ScaledCNN(k={k}) for hyperparameter tuning...")
-    print(f"Will train for {epochs} epochs per trial")
-
-    print("\n" + "=" * 60)
-    print("Starting hyperparameter optimization with Optuna...")
-    print("=" * 60)
-
     # Detect available GPUs
     num_gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
     if num_gpus > 1:
-        print(f"Detected {num_gpus} GPUs. Will distribute trials across GPUs.")
         # Pre-load data to each GPU
         train_datasets_per_gpu = {}
         val_datasets_per_gpu = {}
         for gpu_id in range(num_gpus):
             gpu_device = torch.device(f"cuda:{gpu_id}")
-            print(f"Pre-loading data to GPU {gpu_id}...")
             train_images_gpu = train_images.to(gpu_device)
             train_labels_gpu = train_labels.to(gpu_device)
             val_images_gpu = val_images.to(gpu_device)
@@ -212,28 +192,8 @@ def run(
     )
     elapsed = time.time() - start_time
 
-    print("\n" + "=" * 60)
-    print("OPTIMIZATION RESULTS")
-    print("=" * 60)
-    print(f"Best hyperparameters: {study.best_params}")
-    print(
-        f"Best validation accuracy: {study.best_value:.4f} ({study.best_value * 100:.2f}%)"
-    )
-    print(f"Total optimization time: {elapsed / 60:.2f} minutes")
-    print(f"Number of trials: {len(study.trials)}")
-    print("\nTop 5 trials:")
-    sorted_trials = sorted(
-        study.trials, key=lambda t: t.value if t.value is not None else 0, reverse=True
-    )
-    for i, trial in enumerate(sorted_trials[:5], 1):
-        if trial.value is not None:
-            print(
-                f"  {i}. Accuracy: {trial.value:.4f} ({trial.value * 100:.2f}%) | "
-                f"lr={trial.params.get('lr', 'N/A'):.6f}, "
-                f"weight_decay={trial.params.get('weight_decay', 'N/A'):.6f}, "
-                f"momentum={trial.params.get('momentum', 'N/A'):.4f}"
-            )
-    print("=" * 60)
+    print(f"\nBest: {study.best_value:.4f} ({study.best_value * 100:.2f}%) | Params: {study.best_params}")
+    print(f"Trials: {len(study.trials)} | Time: {elapsed / 60:.2f} min")
 
     results_path = Path(f".cache/scaledcnn_hparam_k{k}_results.pkl")
     results_path.parent.mkdir(parents=True, exist_ok=True)
@@ -248,7 +208,6 @@ def run(
         },
         str(results_path),
     )
-    print(f"\nResults saved to: {results_path}")
 
     return study.best_params, study.best_value
 
@@ -273,14 +232,10 @@ def add_subparser(subparsers):
         default=1,
         help="Number of parallel jobs (default: 1, use 2-4 for GPU)",
     )
-
-    def _entry(args):
-        return run(
-            k=args.k,
-            epochs=args.epochs,
-            n_trials=args.n_trials,
-            n_jobs=args.n_jobs,
-        )
-
-    parser.set_defaults(entry=_entry)
+    parser.set_defaults(entry=lambda args: run(
+        k=args.k,
+        epochs=args.epochs,
+        n_trials=args.n_trials,
+        n_jobs=args.n_jobs,
+    ))
     return parser

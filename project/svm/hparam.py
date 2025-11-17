@@ -128,7 +128,6 @@ def objective(trial, X_train_fv, y_train, X_val_fv, y_val):
 
 def main():
     # Load dataset
-    print("Loading CIFAR-10 dataset...")
     try:
         ds_dict = load_cifar10_data()
     except FileNotFoundError as exc:
@@ -136,37 +135,22 @@ def main():
         return
 
     # Prepare training and validation data
-    print("Preparing training data...")
     train_ds = ds_dict["train"]
     X_train = [np.asarray(item["img"], dtype=np.float32) for item in train_ds]
     y_train = np.array([item["label"] for item in train_ds])
-    print(f"Training samples: {len(X_train)}")
 
-    print("Preparing validation data...")
     val_ds = ds_dict["validation"]
     X_val = [np.asarray(item["img"], dtype=np.float32) for item in val_ds]
     y_val = np.array([item["label"] for item in val_ds])
-    print(f"Validation samples: {len(X_val)}")
 
     # Load pre-trained components
-    print("\nLoading pre-trained PCA and GMM...")
     pca, gmm = load_pretrained_components()
     if pca is None or gmm is None:
         return
 
     # Compute Fisher Vectors for training and validation sets
-    print("\nComputing Fisher Vectors for training set...")
     X_train_fv = compute_fisher_vectors(X_train, pca, gmm)
-    print(f"Training Fisher Vectors shape: {X_train_fv.shape}")
-
-    print("\nComputing Fisher Vectors for validation set...")
     X_val_fv = compute_fisher_vectors(X_val, pca, gmm)
-    print(f"Validation Fisher Vectors shape: {X_val_fv.shape}")
-
-    # Create Optuna study
-    print("\n" + "=" * 60)
-    print("Starting hyperparameter optimization with Optuna...")
-    print("=" * 60)
 
     study = optuna.create_study(
         direction="maximize",
@@ -181,21 +165,7 @@ def main():
         show_progress_bar=True,
     )
 
-    # Print results
-    print("\n" + "=" * 60)
-    print("OPTIMIZATION RESULTS")
-    print("=" * 60)
-    print(f"Best C value: {study.best_params['C']}")
-    print(
-        f"Best validation accuracy: {study.best_value:.4f} ({study.best_value * 100:.2f}%)"
-    )
-    print("\nAll trials:")
-    for trial in study.trials:
-        C_val = trial.params["C"]
-        print(
-            f"  C={C_val:10.5f}: accuracy={trial.value:.4f} ({trial.value * 100:.2f}%)"
-        )
-    print("=" * 60)
+    print(f"\nBest: {study.best_value:.4f} ({study.best_value * 100:.2f}%) | C: {study.best_params['C']}")
 
     # Save results
     results_path = Path(".cache") / "svm_hparam_results.pkl"
@@ -208,7 +178,6 @@ def main():
         },
         str(results_path),
     )
-    print(f"\nResults saved to: {results_path}")
 
 
 if __name__ == "__main__":

@@ -177,13 +177,12 @@ def get_cifar10_dataloader(
     ds_dict = load_cifar10_data()
     ds = ds_dict[split]
 
-    torch_device = device
 
     dataset = CIFAR10Dataset(ds, transform=transform)
 
     from torch.utils.data import DataLoader
 
-    is_cuda = torch_device.type == "cuda"
+    is_cuda = device.type == "cuda"
     data_loader = DataLoader(
         dataset,
         batch_size=batch_size,
@@ -194,4 +193,4 @@ def get_cifar10_dataloader(
         prefetch_factor=4 if is_cuda else 2,
     )
 
-    return data_loader, torch_device
+    return data_loader

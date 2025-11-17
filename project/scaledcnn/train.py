@@ -53,14 +53,10 @@ def run(
     }
     writer.add_custom_scalars(layout)
 
-    print(f"Using device: {device}")
-
     # Enable cuDNN benchmark for faster convolutions
     if device.type == "cuda":
         torch.backends.cudnn.benchmark = True
 
-    print("Pre-loading dataset into GPU memory...")
-    print("Loading training data...")
     repo_root = Path(__file__).resolve().parents[1]
     dataset_path = repo_root / ".cache" / "processed_datasets" / "cifar10"
 
@@ -70,20 +66,13 @@ def run(
     )
     train_labels_np = np.load(dataset_path / "train_labels.npy", mmap_mode="r")
     train_labels = torch.from_numpy(train_labels_np.copy()).to(device)
-    print(
-        f"Loaded {len(train_images)} training images to {device} ({train_images.element_size() * train_images.nelement() / 1024**2:.1f} MB)"
-    )
 
-    print("Loading validation data...")
     val_images_np = np.load(dataset_path / "validation_images.npy", mmap_mode="r")
     val_images = (
         torch.from_numpy(val_images_np.copy()).permute(0, 3, 1, 2).to(device)
     )
     val_labels_np = np.load(dataset_path / "validation_labels.npy", mmap_mode="r")
     val_labels = torch.from_numpy(val_labels_np.copy()).to(device)
-    print(
-        f"Loaded {len(val_images)} validation images to {device} ({val_images.element_size() * val_images.nelement() / 1024**2:.1f} MB)"
-    )
 
     train_dataset = TensorDataset(train_images, train_labels)
     val_dataset = TensorDataset(val_images, val_labels)
@@ -104,16 +93,13 @@ def run(
         pin_memory=False,
     )
 
-    print(f"\nInitializing ScaledCNN(k={k}) model...")
     model = ScaledCNN(
         k=k,
         num_classes=10,
     ).to(device)
 
-    total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"Total parameters: {total_params:,}")
-    print(f"Trainable parameters: {trainable_params:,}")
+    print(f"ScaledCNN(k={k}): {trainable_params:,} trainable params")
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(
@@ -123,7 +109,6 @@ def run(
     )
 
     start_time = time.time()
-    print(f"\nTraining for {epochs} epochs...")
     model_config = {
         "k": k,
         "num_classes": 10,
@@ -158,8 +143,7 @@ def run(
     final_train_acc = training_result.final_train_accuracy
     final_val_loss = training_result.final_val_loss
     final_val_acc = training_result.final_val_accuracy
-    print(f"Best validation accuracy: {best_val_acc:.4f} ({best_val_acc * 100:.2f}%)")
-    print(f"Total training time: {elapsed / 60:.2f} minutes")
+    print(f"Training complete: {best_val_acc:.4f} ({best_val_acc * 100:.2f}%) | Time: {elapsed / 60:.2f} min")
 
     hparams = {
         "k": k,
@@ -196,13 +180,9 @@ def add_subparser(subparsers):
         action="store_true",
         help="Start training from scratch even if checkpoint exists",
     )
-
-    def _entry(args):
-        return run(
-            model_path=args.model_path,
-            k=args.k,
-            resume=not args.no_resume,
-        )
-
-    parser.set_defaults(entry=_entry)
+    parser.set_defaults(entry=lambda args: run(
+        model_path=args.model_path,
+        k=args.k,
+        resume=not args.no_resume,
+    ))
     return parser

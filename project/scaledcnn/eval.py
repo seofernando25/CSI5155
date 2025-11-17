@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import torch
 
 from scaledcnn.evaluation import run_checkpoint_evaluation_cli
@@ -24,9 +26,12 @@ def build_model_from_checkpoint(checkpoint, device):
 
 
 def run(
-    model_path: str = ".cache/models/scaledcnn.pth",
+    k: int,
     batch_size: int = 128,
 ):
+    repo_root = Path(__file__).resolve().parents[1]
+    model_path = repo_root / ".cache" / "models" / f"scaledcnn_k{k}.pth"
+
     extracted_config: dict[str, object] | None = None
 
     def _model_builder(checkpoint: dict, device_obj: torch.device) -> ScaledCNN:
@@ -43,7 +48,7 @@ def run(
     class_names = get_cifar10_class_names()
 
     metrics = run_checkpoint_evaluation_cli(
-        model_path=model_path,
+        model_path=str(model_path),
         batch_size=batch_size,
         model_builder=_model_builder,
         class_names=class_names,
@@ -59,14 +64,7 @@ def run(
 
 def add_subparser(subparsers):
     parser = subparsers.add_parser("eval", help="ScaledCNN eval")
-    parser.add_argument("--model-path", default=".cache/models/scaledcnn.pth")
+    parser.add_argument("--k", type=int, required=True, help="Scaling factor k")
     parser.add_argument("--batch-size", type=int, default=128)
-
-    def _entry(args):
-        return run(
-            model_path=args.model_path,
-            batch_size=args.batch_size,
-        )
-
-    parser.set_defaults(entry=_entry)
+    parser.set_defaults(entry=lambda args: run(k=args.k, batch_size=args.batch_size))
     return parser

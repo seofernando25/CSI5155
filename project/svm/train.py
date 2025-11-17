@@ -59,7 +59,6 @@ def run(model_path: str = SVM_CLASSIFIER_PATH):
 
     start_time = time.time()
 
-    print(f"Loading pre-trained PCA from: {pca_path}")
     pca_data = joblib.load(str(pca_path))
     if isinstance(pca_data, dict) and "pca" in pca_data:
         pca = pca_data["pca"]
@@ -67,24 +66,16 @@ def run(model_path: str = SVM_CLASSIFIER_PATH):
         pca = pca_data
     else:
         raise ValueError(f"Invalid PCA file format: {pca_path}")
-    print(f"Loaded PCA with {pca.n_components} components")
 
-    print(f"\nLoading cached Fisher Vectors from: {fv_path}")
     fvs = joblib.load(str(fv_path))
-    print(f"Loaded Fisher Vectors: {fvs.shape}")
-
-    print(f"Loading cached labels from: {labels_path}")
     y_train = joblib.load(str(labels_path))
-    print(f"Loaded labels: {len(y_train)} samples")
 
     if len(fvs) != len(y_train):
         raise ValueError(
             f"Mismatch - Fisher Vectors has {len(fvs)} samples, but labels has {len(y_train)} samples"
         )
 
-    print(f"Loading cached GMM from: {gmm_path}")
     gmm_data = joblib.load(str(gmm_path))
-
     if isinstance(gmm_data, dict):
         if "sklearn_gmm" in gmm_data:
             gmm = gmm_data["sklearn_gmm"]
@@ -94,8 +85,6 @@ def run(model_path: str = SVM_CLASSIFIER_PATH):
             )
     else:
         gmm = gmm_data
-
-    print("\nInitializing ClassifierSVM...")
     model = ClassifierSVM(
         pca=pca,
         patch_size=PATCH_SIZE,
@@ -107,11 +96,8 @@ def run(model_path: str = SVM_CLASSIFIER_PATH):
 
     model.gmm = gmm
 
-    print("\nTraining SVM on cached Fisher Vectors...")
     model.classifier.fit(fvs, y_train)
     train_accuracy = model.classifier.score(fvs, y_train)
-    print(f"SVM classifier fitted with {len(fvs)} samples")
-    print(f"Training accuracy: {train_accuracy:.4f} ({train_accuracy * 100:.2f}%)")
 
     writer.add_scalar("train/accuracy", train_accuracy, 0)
     writer.add_text("config", f"C={SVM_C}", 0)
@@ -119,10 +105,9 @@ def run(model_path: str = SVM_CLASSIFIER_PATH):
     model_path_obj = Path(model_path)
     model_path_obj.parent.mkdir(parents=True, exist_ok=True)
     model.save(str(model_path_obj))
-    print(f"\nModel saved to: {model_path_obj}")
 
     elapsed = time.time() - start_time
-    print(f"Total training time: {elapsed:.2f} seconds")
+    print(f"Training complete: {train_accuracy:.4f} ({train_accuracy * 100:.2f}%) | Time: {elapsed:.2f}s")
     writer.add_scalar("train/time_seconds", elapsed, 0)
 
     hparams = {
@@ -150,9 +135,5 @@ def run(model_path: str = SVM_CLASSIFIER_PATH):
 def add_subparser(subparsers):
     parser = subparsers.add_parser("train", help="Train SVM classifier")
     parser.add_argument("--model-path", default=SVM_CLASSIFIER_PATH)
-
-    def _entry(args):
-        return run(model_path=args.model_path)
-
-    parser.set_defaults(entry=_entry)
+    parser.set_defaults(entry=lambda args: run(model_path=args.model_path))
     return parser

@@ -12,13 +12,13 @@ from mlxtend.evaluate import mcnemar
 
 from device import device
 from data import get_cifar10_dataloader, get_cifar10_split
-from scaledcnn.confusion_matrix import build_model_from_checkpoint
+from paths import METRICS_DIR, REPO_ROOT
+from scaledcnn.eval import build_model_from_checkpoint
 from svm.constants import SVM_CLASSIFIER_PATH
 from svm.model import ClassifierSVM
+from utils import collect_scaledcnn_predictions
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-METRICS_DIR = REPO_ROOT / ".cache" / "metrics"
 DEFAULT_RESULTS_PATH = METRICS_DIR / "mcnemar_results_mlxtend.json"
 
 
@@ -27,54 +27,6 @@ class ModelSpec:
     model_id: str
     model_type: str
     model_path: Path
-
-
-def _compute_svm_predictions(spec: ModelSpec) -> Tuple[np.ndarray, np.ndarray]:
-    split = "test"
-    print(f"[svm] Loading model from {spec.model_path}")
-    model = ClassifierSVM.load(str(spec.model_path))
-    images, labels = get_cifar10_split(split)
-    print(f"[svm] Computing predictions on {split} split ({len(images)} samples)")
-    predictions = model.predict(images).astype(np.int64)
-    labels_arr = labels.astype(np.int64)
-    return predictions, labels_arr
-
-
-def _compute_scaledcnn_predictions(
-    spec: ModelSpec,
-    batch_size: int,
-) -> Tuple[np.ndarray, np.ndarray]:
-    split = "test"
-    print(f"[scaledcnn] Using device: {device}")
-    if not spec.model_path.exists():
-        raise FileNotFoundError(f"ScaledCNN checkpoint not found at {spec.model_path}")
-
-    checkpoint = torch.load(str(spec.model_path), map_location=device)
-    model, _ = build_model_from_checkpoint(checkpoint, device)
-    model.eval()
-
-    data_loader, _ = get_cifar10_dataloader(
-        split=split,
-        batch_size=batch_size,
-        shuffle=False,
-    )
-    total_samples = len(data_loader.dataset)
-    print(f"[scaledcnn] Computing predictions on {split} split ({total_samples} samples)")
-
-    all_predictions: List[np.ndarray] = []
-    all_labels: List[np.ndarray] = []
-    with torch.no_grad():
-        for images, batch_labels in data_loader:
-            images = images.to(device)
-            batch_labels = batch_labels.to(device)
-            outputs = model(images)
-            preds = torch.argmax(outputs, dim=1)
-            all_predictions.append(preds.cpu().numpy())
-            all_labels.append(batch_labels.cpu().numpy())
-
-    predictions = np.concatenate(all_predictions).astype(np.int64)
-    labels = np.concatenate(all_labels).astype(np.int64)
-    return predictions, labels
 
 
 def _format_pair_token(token: str) -> Tuple[str, str]:
@@ -104,8 +56,6 @@ def main(argv: List[str] | None = None) -> Dict:
     )
     args = parser.parse_args(argv)
 
-    METRICS_DIR.mkdir(parents=True, exist_ok=True)
-
     specs: Dict[str, ModelSpec] = {}
     predictions_cache: Dict[str, Tuple[np.ndarray, np.ndarray]] = {}
 
@@ -133,14 +83,34 @@ def main(argv: List[str] | None = None) -> Dict:
                 )
 
                 if model_type == "svm":
-                    predictions_cache[model_id] = _compute_svm_predictions(
-                        specs[model_id]
-                    )
+                    # Compute SVM predictions
+                    split = "test"
+                    print(f"[svm] Loading model from {model_path}")
+                    model = ClassifierSVM.load(str(model_path))
+                    images, labels = get_cifar10_split(split)
+                    print(f"[svm] Computing predictions on {split} split ({len(images)} samples)")
+                    predictions = model.predict(images).astype(np.int64)
+                    labels_arr = labels.astype(np.int64)
+                    predictions_cache[model_id] = (predictions, labels_arr)
                 else:
-                    predictions_cache[model_id] = _compute_scaledcnn_predictions(
-                        specs[model_id],
-                    batch_size=args.batch_size,
-                )
+                    # Compute ScaledCNN predictions
+                    split = "test"
+                    if not model_path.exists():
+                        raise FileNotFoundError(f"ScaledCNN checkpoint not found at {model_path}")
+
+                    checkpoint = torch.load(str(model_path), map_location=device)
+                    model, _ = build_model_from_checkpoint(checkpoint, device)
+
+                    data_loader = get_cifar10_dataloader(
+                        split=split,
+                        batch_size=args.batch_size,
+                        shuffle=False,
+                    )
+                    total_samples = len(data_loader.dataset)
+                    print(f"[scaledcnn] Computing predictions on {split} split ({total_samples} samples)")
+
+                    predictions, labels = collect_scaledcnn_predictions(model, data_loader)
+                    predictions_cache[model_id] = (predictions, labels)
 
     pair_results = []
     for pair_token in args.pairs:
@@ -190,7 +160,6 @@ def main(argv: List[str] | None = None) -> Dict:
         )
 
     output_path = DEFAULT_RESULTS_PATH
-    output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "split": "test",
         "pairs": pair_results,
