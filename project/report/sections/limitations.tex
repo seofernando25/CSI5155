@@ -1,3 +1,5 @@
 \section{Limitations}
 
-This study is constrained by several factors. First, the analysis is limited to a single CNN architecture family and one dataset, CIFAR-10. While the 20\% label noise successfully induced the phenomenon, this effect may vary with different noise models or datasets. Finally, the Fisher Vector baseline, while strong, is one of many classical techniques; other handcrafted features might yield different baseline results.
+This study relies on the CIFAR-10 dataset and a synthetic uniform label noise model. To ensure the observed event is not an artifact of the low-resolution data or synthetic randomization, future work should validate these findings on other datasets like ImageNet \cite{krizhevsky2012imagenet} and naturally occurring label noise distributions. Specifically, to confirm the scaling laws proposed by Nakkiran et al. \cite{nakkiran2019deep}.
+
+Furthermore, this experiment only tested a plain CNN. Because model biases affect generalization \cite{belkin2019reconciling}, I would have to repeat this scaling study on other architecture (e.g., ResNets, Transformers) to see if model size behaves differently as more depth or attention is added, as hinted by recent large-scale results \cite{zhang2017understanding}.

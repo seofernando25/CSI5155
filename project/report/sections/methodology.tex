@@ -122,7 +122,7 @@ To conduct a thorough analysis, two methods are used:
 
 \subsubsection{Statistical Significance}
 
-A simple t-test is invalid for comparing two classifiers on the same test set. Instead, the non-parametric McNemar's Test is used \cite{demsar2006statistical} to determine if observed performance differences are statistically significant ($p < 0.05$).
+A simple t-test is invalid for comparing two classifiers on the same test set. Instead, the non-parametric McNemar's Test is used \cite{demsar2006statistical} to determine if observed performance differences are statistically significant ($p < 0.05$). We compute the contingency tables and p-values with the MLxtend implementation \cite{raschkas_2018_mlxtend}.
 
 \subsubsection{Error Analysis}
 

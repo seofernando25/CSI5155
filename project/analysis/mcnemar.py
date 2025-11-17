@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 import torch
+from mlxtend.evaluate import mcnemar
 
 from data import get_cifar10_dataloader, get_cifar10_split
 from scaledcnn.confusion_matrix import build_model_from_checkpoint
@@ -18,9 +18,8 @@ from svm.model import ClassifierSVM
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-PREDICTIONS_DIR = REPO_ROOT / ".cache" / "predictions"
 METRICS_DIR = REPO_ROOT / ".cache" / "metrics"
-DEFAULT_RESULTS_PATH = METRICS_DIR / "mcnemar_results.json"
+DEFAULT_RESULTS_PATH = METRICS_DIR / "mcnemar_results_mlxtend.json"
 
 
 @dataclass(frozen=True)
@@ -30,72 +29,23 @@ class ModelSpec:
     model_path: Path
 
 
-def _ensure_directories() -> None:
-    PREDICTIONS_DIR.mkdir(parents=True, exist_ok=True)
-    METRICS_DIR.mkdir(parents=True, exist_ok=True)
-
-
-def _prediction_cache_path(model_id: str, split: str) -> Path:
-    safe_id = model_id.replace("/", "_")
-    return PREDICTIONS_DIR / f"{safe_id}_{split}.npz"
-
-
-def _load_cached_predictions(cache_path: Path) -> Tuple[np.ndarray, np.ndarray]:
-    data = np.load(cache_path)
-    return data["predictions"].astype(np.int64), data["labels"].astype(np.int64)
-
-
-def _save_predictions(
-    cache_path: Path, predictions: np.ndarray, labels: np.ndarray, metadata: Dict
-) -> None:
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(
-        cache_path,
-        predictions=predictions.astype(np.int64),
-        labels=labels.astype(np.int64),
-        metadata=json.dumps(metadata),
-    )
-
-
-def _compute_svm_predictions(
-    spec: ModelSpec,
-    split: str,
-    force: bool,
-) -> Tuple[np.ndarray, np.ndarray]:
-    cache_path = _prediction_cache_path(spec.model_id, split)
-    if cache_path.exists() and not force:
-        print(f"[cache] Loading SVM predictions from {cache_path}")
-        return _load_cached_predictions(cache_path)
-
+def _compute_svm_predictions(spec: ModelSpec) -> Tuple[np.ndarray, np.ndarray]:
+    split = "test"
     print(f"[svm] Loading model from {spec.model_path}")
     model = ClassifierSVM.load(str(spec.model_path))
     images, labels = get_cifar10_split(split)
     print(f"[svm] Computing predictions on {split} split ({len(images)} samples)")
     predictions = model.predict(images).astype(np.int64)
     labels_arr = labels.astype(np.int64)
-    _save_predictions(
-        cache_path,
-        predictions,
-        labels_arr,
-        {"model_id": spec.model_id, "model_path": str(spec.model_path), "split": split},
-    )
-    print(f"[svm] Saved predictions to {cache_path}")
     return predictions, labels_arr
 
 
 def _compute_scaledcnn_predictions(
     spec: ModelSpec,
-    split: str,
     batch_size: int,
-    device: str | None,
-    force: bool,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    cache_path = _prediction_cache_path(spec.model_id, split)
-    if cache_path.exists() and not force:
-        print(f"[cache] Loading ScaledCNN predictions from {cache_path}")
-        return _load_cached_predictions(cache_path)
-
-    torch_device = resolve_torch_device(device)
+    split = "test"
+    torch_device = resolve_torch_device(None)
     print(f"[scaledcnn] Using device: {torch_device}")
     if not spec.model_path.exists():
         raise FileNotFoundError(f"ScaledCNN checkpoint not found at {spec.model_path}")
@@ -126,95 +76,7 @@ def _compute_scaledcnn_predictions(
 
     predictions = np.concatenate(all_predictions).astype(np.int64)
     labels = np.concatenate(all_labels).astype(np.int64)
-    _save_predictions(
-        cache_path,
-        predictions,
-        labels,
-        {"model_id": spec.model_id, "model_path": str(spec.model_path), "split": split},
-    )
-    print(f"[scaledcnn] Saved predictions to {cache_path}")
     return predictions, labels
-
-
-def _resolve_model_spec(
-    model_id: str, custom_paths: Dict[str, Path]
-) -> ModelSpec:
-    if model_id in custom_paths:
-        model_path = custom_paths[model_id]
-    elif model_id == "svm":
-        model_path = (REPO_ROOT / Path(SVM_CLASSIFIER_PATH)).resolve()
-    elif model_id.startswith("scaledcnn_k"):
-        model_path = (REPO_ROOT / ".cache" / "models" / f"{model_id}.pth").resolve()
-    else:
-        raise ValueError(
-            f"Unknown model id '{model_id}'. Provide --model-path {model_id}=/path/to/model."
-        )
-
-    model_type = "svm" if model_id == "svm" else "scaledcnn"
-    if not model_path.exists():
-        raise FileNotFoundError(f"Model file not found for '{model_id}' at {model_path}")
-    return ModelSpec(model_id=model_id, model_type=model_type, model_path=model_path)
-
-
-def _parse_model_overrides(entries: Iterable[str]) -> Dict[str, Path]:
-    overrides: Dict[str, Path] = {}
-    for entry in entries:
-        key, sep, value = entry.partition("=")
-        if not sep:
-            raise ValueError(
-                f"Invalid --model-path override '{entry}'. Expected format id=/abs/path"
-            )
-        overrides[key.strip()] = Path(value.strip()).expanduser().resolve()
-    return overrides
-
-
-def _get_predictions_for_spec(
-    spec: ModelSpec,
-    split: str,
-    batch_size: int,
-    device: str | None,
-    force: bool,
-) -> Tuple[np.ndarray, np.ndarray]:
-    if spec.model_type == "svm":
-        return _compute_svm_predictions(spec, split, force)
-    if spec.model_type == "scaledcnn":
-        return _compute_scaledcnn_predictions(spec, split, batch_size, device, force)
-    raise ValueError(f"Unsupported model type '{spec.model_type}'")
-
-
-def run_mcnemar_test(
-    predictions_a: np.ndarray,
-    predictions_b: np.ndarray,
-    labels: np.ndarray,
-) -> Dict[str, float | int]:
-    if not (len(predictions_a) == len(predictions_b) == len(labels)):
-        raise ValueError("Predictions and labels must have the same length.")
-
-    correct_a = predictions_a == labels
-    correct_b = predictions_b == labels
-
-    n01 = int(np.sum(~correct_a & correct_b))
-    n10 = int(np.sum(correct_a & ~correct_b))
-    n11 = int(np.sum(correct_a & correct_b))
-    n00 = int(np.sum(~correct_a & ~correct_b))
-
-    discordant = n01 + n10
-    if discordant == 0:
-        statistic = 0.0
-        p_value = 1.0
-    else:
-        statistic = ((abs(n01 - n10) - 1) ** 2) / discordant
-        p_value = float(math.erfc(math.sqrt(statistic / 2.0)))
-
-    return {
-        "n01": n01,
-        "n10": n10,
-        "n11": n11,
-        "n00": n00,
-        "discordant": discordant,
-        "chi_square": float(statistic),
-        "p_value": p_value,
-    }
 
 
 def _format_pair_token(token: str) -> Tuple[str, str]:
@@ -228,18 +90,13 @@ def _format_pair_token(token: str) -> Tuple[str, str]:
 
 def main(argv: List[str] | None = None) -> Dict:
     parser = argparse.ArgumentParser(
-        description="Run McNemar's tests between model prediction pairs."
+        description="Run McNemar's tests between model prediction pairs using mlxtend."
     )
     parser.add_argument(
         "--pairs",
         nargs="+",
         required=True,
-        help="Model pairs in the form modelA:modelB (e.g., svm:scaledcnn_k64)",
-    )
-    parser.add_argument(
-        "--split",
-        default="test",
-        help="Dataset split to evaluate (default: test)",
+        help="Model pairs in the form modelA:modelB",
     )
     parser.add_argument(
         "--batch-size",
@@ -247,31 +104,9 @@ def main(argv: List[str] | None = None) -> Dict:
         default=256,
         help="Batch size for ScaledCNN inference (default: 256)",
     )
-    parser.add_argument(
-        "--device",
-        default=None,
-        help="Torch device for ScaledCNN inference (default: auto)",
-    )
-    parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Recompute predictions even if cached files exist.",
-    )
-    parser.add_argument(
-        "--model-path",
-        action="append",
-        default=[],
-        help="Override model path mapping, e.g., scaledcnn_k64=/abs/path/to/checkpoint.pth",
-    )
-    parser.add_argument(
-        "--output",
-        default=str(DEFAULT_RESULTS_PATH),
-        help="Output JSON path for McNemar results.",
-    )
     args = parser.parse_args(argv)
 
-    _ensure_directories()
-    custom_paths = _parse_model_overrides(args.model_path)
+    METRICS_DIR.mkdir(parents=True, exist_ok=True)
 
     specs: Dict[str, ModelSpec] = {}
     predictions_cache: Dict[str, Tuple[np.ndarray, np.ndarray]] = {}
@@ -280,13 +115,33 @@ def main(argv: List[str] | None = None) -> Dict:
         model_a_id, model_b_id = _format_pair_token(pair_token)
         for model_id in (model_a_id, model_b_id):
             if model_id not in specs:
-                specs[model_id] = _resolve_model_spec(model_id, custom_paths)
-                predictions_cache[model_id] = _get_predictions_for_spec(
-                    specs[model_id],
-                    split=args.split,
+                if model_id == "svm":
+                    model_path = (REPO_ROOT / Path(SVM_CLASSIFIER_PATH)).resolve()
+                elif model_id.startswith("scaledcnn_k"):
+                    model_path = (REPO_ROOT / ".cache" / "models" / f"{model_id}.pth").resolve()
+                else:
+                    raise ValueError(
+                        f"Unknown model id '{model_id}'. Provide --model-path {model_id}=/path/to/model."
+                    )
+
+                model_type = "svm" if model_id == "svm" else "scaledcnn"
+                if not model_path.exists():
+                    raise FileNotFoundError(
+                        f"Model file not found for '{model_id}' at {model_path}"
+                    )
+
+                specs[model_id] = ModelSpec(
+                    model_id=model_id, model_type=model_type, model_path=model_path
+                )
+
+                if model_type == "svm":
+                    predictions_cache[model_id] = _compute_svm_predictions(
+                        specs[model_id]
+                    )
+                else:
+                    predictions_cache[model_id] = _compute_scaledcnn_predictions(
+                        specs[model_id],
                     batch_size=args.batch_size,
-                    device=args.device,
-                    force=args.force,
                 )
 
     pair_results = []
@@ -299,22 +154,47 @@ def main(argv: List[str] | None = None) -> Dict:
                 f"Label vectors for {model_a_id} and {model_b_id} do not match. "
                 "Ensure both predictions were computed on the same dataset split."
             )
-        stats = run_mcnemar_test(preds_a, preds_b, labels_a)
+
+        correct_a = preds_a == labels_a
+        correct_b = preds_b == labels_a
+
+        n01 = int(np.sum(~correct_a & correct_b))
+        n10 = int(np.sum(correct_a & ~correct_b))
+        n11 = int(np.sum(correct_a & correct_b))
+        n00 = int(np.sum(~correct_a & ~correct_b))
+
+        contingency = np.array([[n11, n10], [n01, n00]], dtype=np.int64)
+        discordant = n01 + n10
+        assert discordant >= 25, "McNemar's test requires at least 25 discordant pairs."
+        chi2, p_value = mcnemar(ary=contingency)
+        chi_square = float(chi2) if chi2 is not None else None
+
+        stats = {
+            "n01": n01,
+            "n10": n10,
+            "n11": n11,
+            "n00": n00,
+            "discordant": discordant,
+            "chi_square": chi_square,
+            "p_value": float(p_value),
+        }
         result = {
             "model_a": model_a_id,
             "model_b": model_b_id,
             **stats,
         }
         pair_results.append(result)
+        chi_square_val = stats["chi_square"]
+        chi_square_repr = f"{chi_square_val:.4f}" if chi_square_val is not None else "None"
         print(
             f"[mcnemar] {model_a_id} vs {model_b_id}: "
-            f"chi-square={stats['chi_square']:.4f}, p-value={stats['p_value']:.3}"
+            f"chi-square={chi_square_repr}, p-value={stats['p_value']:.3g}"
         )
 
-    output_path = Path(args.output).expanduser().resolve()
+    output_path = DEFAULT_RESULTS_PATH
     output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
-        "split": args.split,
+        "split": "test",
         "pairs": pair_results,
     }
     with output_path.open("w", encoding="utf-8") as f:
