@@ -32,7 +32,9 @@ def run(
         info = describe_model(k=k)
         params_list.append(info["trainable_params"])
         # Load metrics for this k value
-        metrics_path = require_file(METRICS_DIR / f"scaledcnn_k{k}_test_training_report.json")
+        metrics_path = require_file(
+            METRICS_DIR / f"scaledcnn_k{k}_test_training_report.json"
+        )
         with metrics_path.open("r", encoding="utf-8") as f:
             data = json.load(f)
         acc = float(data["classification_report"]["accuracy"])
@@ -42,7 +44,11 @@ def run(
     params = np.array(params_list, dtype=np.float64)
     acc = np.array(acc_list)
     f1 = np.array(f1_list)
-    output = Path(output_path) if output_path else FIGURES_DIR / "scaledcnn_capacity_vs_performance.pdf"
+    output = (
+        Path(output_path)
+        if output_path
+        else FIGURES_DIR / "scaledcnn_capacity_vs_performance.pdf"
+    )
 
     x_log = np.log10(params)
     acc_xs, acc_ys = _interpolate(params, acc)
@@ -55,7 +61,7 @@ def run(
     plt.plot(f1_xs, f1_ys, color="#ff7f0e", linestyle=":", linewidth=2)
 
     xticks = np.log10(params)
-    xtick_labels = [f"{p/1e6:.2f}M" for p in params]
+    xtick_labels = [f"{p / 1e6:.2f}M" for p in params]
     plt.xticks(xticks, xtick_labels, rotation=45)
 
     plt.xlabel("Trainable Parameters")
@@ -84,5 +90,3 @@ def add_subparser(subparsers):
     )
     parser.set_defaults(entry=lambda args: run(output_path=args.output_path))
     return parser
-
-

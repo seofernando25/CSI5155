@@ -17,10 +17,7 @@ from utils import require_file
 
 def main():
     # Check for required files
-    patches_path = require_file(
-        PATCHES_PATH,
-        hint="Extract patches first"
-    )
+    patches_path = require_file(PATCHES_PATH, hint="Extract patches first")
 
     # Load patches
     print(f"Loading patches from: {patches_path}")

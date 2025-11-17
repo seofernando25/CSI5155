@@ -1,7 +1,7 @@
 from . import download, process, explorer
 from .datasets import (
+    CIFAR10_CLASS_NAMES,
     CIFAR10Dataset,
-    get_cifar10_class_names,
     get_cifar10_dataloader,
     get_cifar10_split,
     load_cifar10_data,
@@ -41,8 +41,8 @@ def register_subcommands(subparsers):
 
 __all__ = [
     "register_subcommands",
+    "CIFAR10_CLASS_NAMES",
     "CIFAR10Dataset",
-    "get_cifar10_class_names",
     "get_cifar10_dataloader",
     "get_cifar10_split",
     "load_cifar10_data",

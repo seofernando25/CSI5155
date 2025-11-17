@@ -2,12 +2,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Sequence, Tuple
-
 import numpy as np
 import torch
 from sklearn.metrics import classification_report, confusion_matrix
 from torch.utils.data import DataLoader
-
 from device import device
 from paths import FIGURES_DIR, METRICS_DIR
 from visualization import plot_confusion_matrix
@@ -68,13 +66,11 @@ def generate_classification_report_and_confusion_matrix(
     model_token: str,
     split: str,
 ) -> dict:
-    # Infer paths based on model_token and split
-    # Use double underscores for figure path to match existing conventions (e.g., SVM__test__confusion_matrix.pdf)
-    confusion_figure_path = FIGURES_DIR / f"{model_token}__{split}__confusion_matrix.pdf"
-    # Use single underscore for metrics JSON (e.g., svm_test_metrics.json)
+    confusion_figure_path = (
+        FIGURES_DIR / f"{model_token}__{split}__confusion_matrix.pdf"
+    )
     metrics_json_path = METRICS_DIR / f"{model_token}_{split}_metrics.json"
-    
-    # Generate confusion matrix plot
+
     plot_confusion_matrix(
         labels=labels,
         predictions=predictions,
@@ -83,7 +79,6 @@ def generate_classification_report_and_confusion_matrix(
     )
     print(f"Confusion matrix figure saved to: {confusion_figure_path}")
 
-    # Save confusion matrix data
     save_confusion_matrix_json(
         labels=labels,
         predictions=predictions,
@@ -91,8 +86,6 @@ def generate_classification_report_and_confusion_matrix(
         split=split,
         class_names=class_names,
     )
-
-    # Generate classification report
     classification_report_dict = classification_report(
         labels,
         predictions,
@@ -101,7 +94,6 @@ def generate_classification_report_and_confusion_matrix(
         output_dict=True,
     )
 
-    # Save metrics JSON
     with metrics_json_path.open("w", encoding="utf-8") as f:
         json.dump(classification_report_dict, f, indent=2)
     print(f"Metrics saved to: {metrics_json_path}")
@@ -111,4 +103,3 @@ def generate_classification_report_and_confusion_matrix(
         "confusion_figure": str(confusion_figure_path),
         "metrics_json": str(metrics_json_path),
     }
-

@@ -3,7 +3,7 @@ from pathlib import Path
 import torch
 
 from device import device
-from data import get_cifar10_class_names, get_cifar10_dataloader
+from data import CIFAR10_CLASS_NAMES, get_cifar10_dataloader
 from scaledcnn.eval import build_model_from_checkpoint
 from utils import (
     collect_scaledcnn_predictions,
@@ -17,10 +17,7 @@ def run(
     split: str = "test",
     batch_size: int = 128,
 ):
-    model_path_obj = require_file(
-        model_path,
-        hint="Train the model first"
-    )
+    model_path_obj = require_file(model_path, hint="Train the model first")
 
     checkpoint = torch.load(str(model_path_obj), map_location=device)
     model, config = build_model_from_checkpoint(checkpoint, device)
@@ -34,7 +31,7 @@ def run(
     )
     predictions, labels = collect_scaledcnn_predictions(model, data_loader)
 
-    class_names = get_cifar10_class_names()
+    class_names = CIFAR10_CLASS_NAMES
     model_token = f"scaledcnn_k{k}"
 
     result = generate_classification_report_and_confusion_matrix(
@@ -60,10 +57,11 @@ def add_subparser(subparsers):
         help="Dataset split to evaluate on",
     )
     parser.add_argument("--batch-size", type=int, default=128)
-    parser.set_defaults(entry=lambda args: run(
-        model_path=args.model_path,
-        split=args.split,
-        batch_size=args.batch_size,
-    ))
+    parser.set_defaults(
+        entry=lambda args: run(
+            model_path=args.model_path,
+            split=args.split,
+            batch_size=args.batch_size,
+        )
+    )
     return parser
-

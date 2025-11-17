@@ -1,5 +1,11 @@
+"""
+Hyperparameter tuning for ScaledCNN.
+
+Scripts wasn't used in the final report since I was replicating
+but leaving it here for reference.
+"""
+
 from pathlib import Path
-import multiprocessing
 import time
 import numpy as np
 import torch
@@ -22,9 +28,7 @@ def objective(
     weight_decay = trial.suggest_float("weight_decay", 1e-5, 1e-2, log=True)
     momentum = trial.suggest_float("momentum", 0.8, 0.99)
 
-    # Enable cuDNN benchmark for faster convolutions
-    if target_device.type == "cuda":
-        torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.benchmark = True
 
     model = ScaledCNN(k=k, num_classes=10).to(target_device)
 
@@ -121,7 +125,6 @@ def run(
     n_trials: int = 50,
     n_jobs: int = 1,
 ):
-    # Load directly from numpy files (much faster than PyArrow conversion)
     repo_root = Path(__file__).resolve().parents[1]
     dataset_path = repo_root / ".cache" / "processed_datasets" / "cifar10"
 
@@ -133,34 +136,12 @@ def run(
     train_labels = torch.from_numpy(train_labels_np.copy()).to(device)
 
     val_images_np = np.load(dataset_path / "validation_images.npy", mmap_mode="r")
-    val_images = (
-        torch.from_numpy(val_images_np.copy()).permute(0, 3, 1, 2).to(device)
-    )
+    val_images = torch.from_numpy(val_images_np.copy()).permute(0, 3, 1, 2).to(device)
     val_labels_np = np.load(dataset_path / "validation_labels.npy", mmap_mode="r")
     val_labels = torch.from_numpy(val_labels_np.copy()).to(device)
 
     train_dataset = TensorDataset(train_images, train_labels)
     val_dataset = TensorDataset(val_images, val_labels)
-
-    # Detect available GPUs
-    num_gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
-    if num_gpus > 1:
-        # Pre-load data to each GPU
-        train_datasets_per_gpu = {}
-        val_datasets_per_gpu = {}
-        for gpu_id in range(num_gpus):
-            gpu_device = torch.device(f"cuda:{gpu_id}")
-            train_images_gpu = train_images.to(gpu_device)
-            train_labels_gpu = train_labels.to(gpu_device)
-            val_images_gpu = val_images.to(gpu_device)
-            val_labels_gpu = val_labels.to(gpu_device)
-            train_datasets_per_gpu[gpu_id] = TensorDataset(
-                train_images_gpu, train_labels_gpu
-            )
-            val_datasets_per_gpu[gpu_id] = TensorDataset(val_images_gpu, val_labels_gpu)
-    else:
-        train_datasets_per_gpu = {0: train_dataset}
-        val_datasets_per_gpu = {0: val_dataset}
 
     study = optuna.create_study(
         direction="maximize",
@@ -169,19 +150,7 @@ def run(
     )
 
     def _objective(trial):
-        # Assign GPU based on process ID (works with multiprocessing)
-        if num_gpus > 1:
-            # Use process ID to assign GPU consistently per process
-            pid = multiprocessing.current_process().pid
-            process_id = (pid if pid is not None else 0) % num_gpus
-            target_device = torch.device(f"cuda:{process_id}")
-            train_ds = train_datasets_per_gpu[process_id]
-            val_ds = val_datasets_per_gpu[process_id]
-        else:
-            target_device = device
-            train_ds = train_dataset
-            val_ds = val_dataset
-        return objective(trial, train_ds, val_ds, target_device, k=k, epochs=epochs)
+        return objective(trial, train_dataset, val_dataset, device, k=k, epochs=epochs)
 
     start_time = time.time()
     study.optimize(
@@ -192,7 +161,9 @@ def run(
     )
     elapsed = time.time() - start_time
 
-    print(f"\nBest: {study.best_value:.4f} ({study.best_value * 100:.2f}%) | Params: {study.best_params}")
+    print(
+        f"\nBest: {study.best_value:.4f} ({study.best_value * 100:.2f}%) | Params: {study.best_params}"
+    )
     print(f"Trials: {len(study.trials)} | Time: {elapsed / 60:.2f} min")
 
     results_path = Path(f".cache/scaledcnn_hparam_k{k}_results.pkl")
@@ -232,10 +203,12 @@ def add_subparser(subparsers):
         default=1,
         help="Number of parallel jobs (default: 1, use 2-4 for GPU)",
     )
-    parser.set_defaults(entry=lambda args: run(
-        k=args.k,
-        epochs=args.epochs,
-        n_trials=args.n_trials,
-        n_jobs=args.n_jobs,
-    ))
+    parser.set_defaults(
+        entry=lambda args: run(
+            k=args.k,
+            epochs=args.epochs,
+            n_trials=args.n_trials,
+            n_jobs=args.n_jobs,
+        )
+    )
     return parser

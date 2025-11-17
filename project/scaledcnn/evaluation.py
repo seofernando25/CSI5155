@@ -16,6 +16,7 @@ from tqdm import tqdm
 from device import device
 from utils import require_file
 
+
 def summarize_classification_results(
     labels: np.ndarray,
     predictions: np.ndarray,
@@ -152,18 +153,13 @@ def evaluate_model_checkpoint(
     model_builder: Callable[[dict, torch.device], torch.nn.Module],
     batch_size: int,
     class_names: Sequence[str],
-    dataloader_factory: Callable[
-        [str, int, bool], DataLoader
-    ],
+    dataloader_factory: Callable[[str, int, bool], DataLoader],
     evaluation_fn: Callable[
         [torch.nn.Module, DataLoader, Sequence[str]], dict
     ] = run_classification_evaluation,
     on_checkpoint_loaded: Optional[Callable[[dict], None]] = None,
 ) -> dict:
-    model_path_obj = require_file(
-        checkpoint_path,
-        hint="Train the model first"
-    )
+    model_path_obj = require_file(checkpoint_path, hint="Train the model first")
 
     checkpoint = torch.load(str(model_path_obj), map_location=device)
     model = model_builder(checkpoint, device)
@@ -184,9 +180,7 @@ def run_checkpoint_evaluation_cli(
     batch_size: int,
     model_builder: Callable[[dict, torch.device], torch.nn.Module],
     class_names: Sequence[str],
-    dataloader_factory: Callable[
-        [str, int, bool], DataLoader
-    ],
+    dataloader_factory: Callable[[str, int, bool], DataLoader],
     evaluation_fn: Callable[
         [torch.nn.Module, DataLoader, Sequence[str]], dict
     ] = run_classification_evaluation,
@@ -210,4 +204,3 @@ def run_checkpoint_evaluation_cli(
                 f"Model file not found at {model_path_obj}. {missing_checkpoint_hint}"
             ) from exc
         raise
-

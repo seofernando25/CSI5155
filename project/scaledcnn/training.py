@@ -11,6 +11,7 @@ from tqdm import tqdm
 
 from device import device
 
+
 @dataclass
 class TrainingLoopResult:
     best_val_accuracy: float
@@ -144,7 +145,9 @@ def run_training_loop(
             print("Starting training from scratch...")
             start_epoch = 1
     elif checkpoint_path.exists() and not resume:
-        print(f"Checkpoint exists at {checkpoint_path} but resume=False, starting from scratch...")
+        print(
+            f"Checkpoint exists at {checkpoint_path} but resume=False, starting from scratch..."
+        )
     else:
         print("No checkpoint found, starting training from scratch...")
 

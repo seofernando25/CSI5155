@@ -59,16 +59,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     register_scaledcnn(scaledcnn_sub)
 
-    # Data utilities (optional - may not exist in archived deployments)
-    try:
-        from data import register_subcommands as register_data
+    from data import register_subcommands as register_data
 
-        data_parser = subparsers.add_parser("data", help="Dataset preparation utilities")
-        data_sub = data_parser.add_subparsers(dest="data_command", required=True)
-        register_data(data_sub)
-    except ImportError:
-        # Data module not available (e.g., in archived deployment without data folder)
-        pass
+    data_parser = subparsers.add_parser("data", help="Dataset preparation utilities")
+    data_sub = data_parser.add_subparsers(dest="data_command", required=True)
+    register_data(data_sub)
 
     return parser
 

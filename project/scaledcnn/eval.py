@@ -3,7 +3,7 @@ from pathlib import Path
 import torch
 
 from scaledcnn.evaluation import run_checkpoint_evaluation_cli
-from data import get_cifar10_class_names, get_cifar10_dataloader
+from data import CIFAR10_CLASS_NAMES, get_cifar10_dataloader
 from scaledcnn.model import ScaledCNN
 
 
@@ -45,7 +45,7 @@ def run(
             k = extracted_config.get("k", 1)
             print(f"Configuration: k={k}")
 
-    class_names = get_cifar10_class_names()
+    class_names = CIFAR10_CLASS_NAMES
 
     metrics = run_checkpoint_evaluation_cli(
         model_path=str(model_path),

@@ -11,4 +11,3 @@ def require_file(path: Path | str, hint: str | None = None) -> Path:
             msg += f". {hint}"
         raise FileNotFoundError(msg)
     return path_obj
-

@@ -66,7 +66,9 @@ def main(argv: List[str] | None = None) -> Dict:
                 if model_id == "svm":
                     model_path = (REPO_ROOT / Path(SVM_CLASSIFIER_PATH)).resolve()
                 elif model_id.startswith("scaledcnn_k"):
-                    model_path = (REPO_ROOT / ".cache" / "models" / f"{model_id}.pth").resolve()
+                    model_path = (
+                        REPO_ROOT / ".cache" / "models" / f"{model_id}.pth"
+                    ).resolve()
                 else:
                     raise ValueError(
                         f"Unknown model id '{model_id}'. Provide --model-path {model_id}=/path/to/model."
@@ -85,7 +87,9 @@ def main(argv: List[str] | None = None) -> Dict:
                     print(f"[svm] Loading model from {model_path}")
                     model = ClassifierSVM.load(str(model_path))
                     images, labels = get_cifar10_split(split)
-                    print(f"[svm] Computing predictions on {split} split ({len(images)} samples)")
+                    print(
+                        f"[svm] Computing predictions on {split} split ({len(images)} samples)"
+                    )
                     predictions = model.predict(images).astype(np.int64)
                     labels_arr = labels.astype(np.int64)
                     predictions_cache[model_id] = (predictions, labels_arr)
@@ -103,9 +107,13 @@ def main(argv: List[str] | None = None) -> Dict:
                         shuffle=False,
                     )
                     total_samples = len(data_loader.dataset)
-                    print(f"[scaledcnn] Computing predictions on {split} split ({total_samples} samples)")
+                    print(
+                        f"[scaledcnn] Computing predictions on {split} split ({total_samples} samples)"
+                    )
 
-                    predictions, labels = collect_scaledcnn_predictions(model, data_loader)
+                    predictions, labels = collect_scaledcnn_predictions(
+                        model, data_loader
+                    )
                     predictions_cache[model_id] = (predictions, labels)
 
     pair_results = []
@@ -149,7 +157,9 @@ def main(argv: List[str] | None = None) -> Dict:
         }
         pair_results.append(result)
         chi_square_val = stats["chi_square"]
-        chi_square_repr = f"{chi_square_val:.4f}" if chi_square_val is not None else "None"
+        chi_square_repr = (
+            f"{chi_square_val:.4f}" if chi_square_val is not None else "None"
+        )
         print(
             f"[mcnemar] {model_a_id} vs {model_b_id}: "
             f"chi-square={chi_square_repr}, p-value={stats['p_value']:.3g}"
@@ -168,5 +178,3 @@ def main(argv: List[str] | None = None) -> Dict:
 
 if __name__ == "__main__":
     main()
-
-

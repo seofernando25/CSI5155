@@ -1,4 +1,4 @@
-from pathlib import Path
+from paths import MODELS_DIR, PIPELINE_DIR
 
 # Hyperparameters
 
@@ -9,12 +9,7 @@ STRIDE = 4
 PCA_DIM = 24  # 0.96 explained variance
 N_COMPONENTS = 64  # GMM components
 SVM_C = 1e-4
-RANDOM_STATE = 42
-
-# File paths
-CACHE_DIR = Path(".cache")
-MODELS_DIR = CACHE_DIR / "models"
-PIPELINE_DIR = CACHE_DIR / "svm_pipeline"
+RANDOM_STATE = 123
 
 # Model paths
 PCA_PATH = str(MODELS_DIR / "svm_pca.pkl")

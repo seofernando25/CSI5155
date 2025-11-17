@@ -22,22 +22,10 @@ from utils import require_file, load_pca, load_gmm
 
 
 def _load_requirements():
-    pca_path = require_file(
-        PCA_PATH,
-        hint="Train PCA first"
-    )
-    fv_path = require_file(
-        FISHER_VECTORS_PATH,
-        hint="Compute fisher vectors first"
-    )
-    gmm_path = require_file(
-        GMM_PATH,
-        hint="Compute fisher vectors first"
-    )
-    labels_path = require_file(
-        LABELS_PATH,
-        hint="Extract patches first"
-    )
+    pca_path = require_file(PCA_PATH, hint="Train PCA first")
+    fv_path = require_file(FISHER_VECTORS_PATH, hint="Compute fisher vectors first")
+    gmm_path = require_file(GMM_PATH, hint="Compute fisher vectors first")
+    labels_path = require_file(LABELS_PATH, hint="Extract patches first")
 
     return pca_path, fv_path, gmm_path, labels_path
 
@@ -80,7 +68,9 @@ def run(model_path: str = SVM_CLASSIFIER_PATH):
     model.save(str(model_path_obj))
 
     elapsed = time.time() - start_time
-    print(f"Training complete: {train_accuracy:.4f} ({train_accuracy * 100:.2f}%) | Time: {elapsed:.2f}s")
+    print(
+        f"Training complete: {train_accuracy:.4f} ({train_accuracy * 100:.2f}%) | Time: {elapsed:.2f}s"
+    )
     writer.add_scalar("train/time_seconds", elapsed, 0)
 
     hparams = {

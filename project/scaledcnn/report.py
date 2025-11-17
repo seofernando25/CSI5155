@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from tensorboard.backend.event_processing import event_accumulator
 from device import device
-from data import get_cifar10_class_names, get_cifar10_dataloader
+from data import CIFAR10_CLASS_NAMES, get_cifar10_dataloader
 from paths import FIGURES_DIR, METRICS_DIR, MODELS_DIR, TENSORBOARD_DIR
 from scaledcnn.eval import build_model_from_checkpoint
 from utils import (
@@ -71,7 +71,7 @@ def run(
         raise FileNotFoundError(f"No run directories found inside {base_dir}")
     logdir_path = require_file(runs[-1])
 
-     # Set up output paths
+    # Set up output paths
     model_stem = model_path_obj.stem
     error_figure_path_obj = FIGURES_DIR / f"{model_stem}_error_curve.pdf"
     json_path_obj = METRICS_DIR / f"{model_stem}_{split}_training_report.json"
@@ -128,7 +128,7 @@ def run(
     plt.close()
 
     # Generate classification report and predictions
-    class_names = get_cifar10_class_names()
+    class_names = CIFAR10_CLASS_NAMES
     checkpoint = torch.load(str(model_path_obj), map_location=device)
     model, config = build_model_from_checkpoint(checkpoint, device)
 
@@ -139,11 +139,11 @@ def run(
     )
 
     predictions_arr, labels_arr = collect_scaledcnn_predictions(model, data_loader)
-    
+
     # Generate confusion matrix, classification report, and save metrics
     k = config.get("k", 1)
     model_token = f"scaledcnn_k{k}"
-    
+
     result = generate_classification_report_and_confusion_matrix(
         labels=labels_arr,
         predictions=predictions_arr,
@@ -186,7 +186,7 @@ def add_subparser(subparsers):
         help="Dataset split for evaluation.",
     )
     parser.add_argument("--batch-size", type=int, default=256)
-    parser.set_defaults(entry=lambda args: run(k=args.k, split=args.split, batch_size=args.batch_size))
+    parser.set_defaults(
+        entry=lambda args: run(k=args.k, split=args.split, batch_size=args.batch_size)
+    )
     return parser
-
-

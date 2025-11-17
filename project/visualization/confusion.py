@@ -58,5 +58,3 @@ def plot_confusion_matrix(
 
     print(f"Confusion matrix saved to: {output_path}")
     return output_path
-
-

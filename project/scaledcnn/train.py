@@ -53,9 +53,7 @@ def run(
     }
     writer.add_custom_scalars(layout)
 
-    # Enable cuDNN benchmark for faster convolutions
-    if device.type == "cuda":
-        torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.benchmark = True
 
     repo_root = Path(__file__).resolve().parents[1]
     dataset_path = repo_root / ".cache" / "processed_datasets" / "cifar10"
@@ -68,9 +66,7 @@ def run(
     train_labels = torch.from_numpy(train_labels_np.copy()).to(device)
 
     val_images_np = np.load(dataset_path / "validation_images.npy", mmap_mode="r")
-    val_images = (
-        torch.from_numpy(val_images_np.copy()).permute(0, 3, 1, 2).to(device)
-    )
+    val_images = torch.from_numpy(val_images_np.copy()).permute(0, 3, 1, 2).to(device)
     val_labels_np = np.load(dataset_path / "validation_labels.npy", mmap_mode="r")
     val_labels = torch.from_numpy(val_labels_np.copy()).to(device)
 
@@ -143,7 +139,9 @@ def run(
     final_train_acc = training_result.final_train_accuracy
     final_val_loss = training_result.final_val_loss
     final_val_acc = training_result.final_val_accuracy
-    print(f"Training complete: {best_val_acc:.4f} ({best_val_acc * 100:.2f}%) | Time: {elapsed / 60:.2f} min")
+    print(
+        f"Training complete: {best_val_acc:.4f} ({best_val_acc * 100:.2f}%) | Time: {elapsed / 60:.2f} min"
+    )
 
     hparams = {
         "k": k,
@@ -180,9 +178,11 @@ def add_subparser(subparsers):
         action="store_true",
         help="Start training from scratch even if checkpoint exists",
     )
-    parser.set_defaults(entry=lambda args: run(
-        model_path=args.model_path,
-        k=args.k,
-        resume=not args.no_resume,
-    ))
+    parser.set_defaults(
+        entry=lambda args: run(
+            model_path=args.model_path,
+            k=args.k,
+            resume=not args.no_resume,
+        )
+    )
     return parser

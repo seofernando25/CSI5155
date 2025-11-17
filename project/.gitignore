@@ -1,17 +1,12 @@
 # Python
 __pycache__/
 *.pyc
-
-# Project cache and data
 .cache/
 .aim/
 .python-version
 project.egg-info/
 .venv/
 .ruff_cache/
-
-# Extracted features (large numpy arrays)
-.cache/features/*.npy
 
 # LaTeX
 *.aux

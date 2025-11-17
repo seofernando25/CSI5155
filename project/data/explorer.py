@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse, Response
 from PIL import Image
 import uvicorn
 from utils import require_file
-from data.datasets import get_cifar10_class_names
+from data import CIFAR10_CLASS_NAMES
 
 
 # Global variables to store dataset info
@@ -64,16 +64,8 @@ def load_dataset_info(dataset_path: Path) -> Dict[str, Any]:
 
     info["features"] = {name: str(feature) for name, feature in ds.features.items()}
 
-    image_col = None
-    if "image" in ds.features:
-        image_col = "image"
-    elif "img" in ds.features:
-        image_col = "img"
-    if image_col is None:
-        raise ValueError("No image column found")
-
     # Get first image and convert to numpy array
-    first_image = pil_to_np(ds[0][image_col])
+    first_image = pil_to_np(ds[0]["img"])
     if isinstance(first_image, np.ndarray):
         info["dimensions"] = list(first_image.shape)
     else:
@@ -81,7 +73,7 @@ def load_dataset_info(dataset_path: Path) -> Dict[str, Any]:
         info["dimensions"] = "Unknown"
 
     # Sample min and max over first up to 100 samples
-    sample_images = [pil_to_np(ds[i][image_col]) for i in range(min(100, len(ds)))]
+    sample_images = [pil_to_np(ds[i]["img"]) for i in range(min(100, len(ds)))]
     # Ensure all are numpy arrays
     sample_images = [
         img if isinstance(img, np.ndarray) else np.asarray(img) for img in sample_images
@@ -220,34 +212,24 @@ async def get_dataset_samples(
 
     ds: Dataset = ds_dict[split]
 
-    image_col = None
-    if "img" in ds.features:
-        ds = ds.rename_column("img", "image")
-        image_col = "image"
-    elif "image" in ds.features:
-        image_col = "image"
-
     total_samples = len(ds)
     start_idx = (page - 1) * page_size
     end_idx = min(start_idx + page_size, total_samples)
 
     # Get class names for label mapping
-    class_names = get_cifar10_class_names()
+    class_names = CIFAR10_CLASS_NAMES
 
     samples = []
     for i in range(start_idx, end_idx):
         sample = ds[i]
         sample = make_serializable(sample)
 
-        # Add label name if label exists
-        if "label" in sample:
-            label_idx = int(sample["label"])
-            if 0 <= label_idx < len(class_names):
-                sample["label_name"] = class_names[label_idx]
+        label_idx = int(sample["label"])
+        if 0 <= label_idx < len(class_names):
+            sample["label_name"] = class_names[label_idx]
 
-        if image_col and image_col in sample:
-            sample["image_base64"] = image_to_base64(sample[image_col])
-            del sample[image_col]
+        sample["image_base64"] = image_to_base64(sample["img"])
+        del sample["img"]
 
         samples.append(sample)
 

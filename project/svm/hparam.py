@@ -19,6 +19,7 @@ from svm.constants import (
 )
 from utils import require_file, load_pca, load_gmm
 
+
 def compute_fisher_vectors(images, pca, gmm):
     from skimage.feature import fisher_vector
     from tqdm import tqdm
@@ -36,13 +37,8 @@ def compute_fisher_vectors(images, pca, gmm):
     )
     temp_model.gmm = gmm
 
-    # Images from processed dataset are already float32 in [0,1]
     X = [np.asarray(img, dtype=np.float32) for img in images]
-
-    # Extract patches
     rgb_descs = temp_model._extract_patches(X)
-
-    # Compute Fisher Vectors
     fvs = []
     for img_desc in tqdm(rgb_descs, desc="Computing Fisher Vectors", leave=False):
         desc_pca = pca.transform(img_desc)
@@ -53,7 +49,8 @@ def compute_fisher_vectors(images, pca, gmm):
 
 
 def objective(trial, X_train_fv, y_train, X_val_fv, y_val):
-    # Suggest C value from the specified list
+    # These values have been fine tuned from previously trying larger values already
+    # eg: [0.01, 0.1, 1, 10] but these didn't perform well at all compared to smaller values
     C = trial.suggest_categorical("C", [1e-5, 3e-5, 5e-5, 1e-4])
 
     # Create and train SVM classifier
@@ -67,17 +64,14 @@ def objective(trial, X_train_fv, y_train, X_val_fv, y_val):
                     max_iter=100,
                     random_state=RANDOM_STATE,
                     dual=False,
-                    tol=1e-3,  # Relaxed tolerance for faster training
-                    verbose=0,  # Disable verbose output
+                    tol=1e-3,
+                    verbose=0,
                 ),
             ),
         ]
     )
 
-    # Train
     classifier.fit(X_train_fv, y_train)
-
-    # Evaluate on validation set
     y_pred = classifier.predict(X_val_fv)
     accuracy = accuracy_score(y_val, y_pred)
 
@@ -85,7 +79,6 @@ def objective(trial, X_train_fv, y_train, X_val_fv, y_val):
 
 
 def main():
-    # Load dataset
     ds_dict = load_cifar10_data()
 
     # Prepare training and validation data
@@ -98,14 +91,8 @@ def main():
     y_val = np.array([item["label"] for item in val_ds])
 
     # Load pre-trained components
-    pca = load_pca(require_file(
-        PCA_PATH,
-        hint="Train PCA first"
-    ))
-    gmm = load_gmm(require_file(
-        GMM_PATH,
-        hint="Train GMM first"
-    ))
+    pca = load_pca(require_file(PCA_PATH, hint="Train PCA first"))
+    gmm = load_gmm(require_file(GMM_PATH, hint="Train GMM first"))
 
     # Compute Fisher Vectors for training and validation sets
     X_train_fv = compute_fisher_vectors(X_train, pca, gmm)
@@ -117,14 +104,15 @@ def main():
         sampler=optuna.samplers.GridSampler({"C": [1e-5, 3e-5, 5e-5, 1e-4]}),
     )
 
-    # Optimize
     study.optimize(
         lambda trial: objective(trial, X_train_fv, y_train, X_val_fv, y_val),
-        n_trials=4,  # One trial per C value
+        n_trials=4,
         show_progress_bar=True,
     )
 
-    print(f"\nBest: {study.best_value:.4f} ({study.best_value * 100:.2f}%) | C: {study.best_params['C']}")
+    print(
+        f"\nBest: {study.best_value:.4f} ({study.best_value * 100:.2f}%) | C: {study.best_params['C']}"
+    )
 
     # Save results
     results_path = Path(".cache") / "svm_hparam_results.pkl"
