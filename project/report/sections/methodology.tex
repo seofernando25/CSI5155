@@ -4,9 +4,9 @@ The experiment consists of two parts: establishing a classical baseline using an
 
 \subsection{Dataset and Preprocessing}
 
-The CIFAR-10 dataset \cite{krizhevsky2009learning} consists of 60,000 $32\times32$ color images across 10 classes. The standard partitioning is used: a 50,000-image training set and a 10,000-image test set. The training set is further split into 40,000 training and 10,000 validation images. The official test set is held out for final evaluation.
+The CIFAR-10 dataset consists of 60,000 $32\times32$ color images across 10 classes. The standard partitioning is used: a 50,000-image training set and a 10,000-image test set. The training set is further split into 40,000 training and 10,000 validation images. The official test set is held out for final evaluation.
 
-To amplify the double descent effect \cite{nakkiran2019deep}, 20\% label noise is introduced to the 40,000-image training set. This is achieved by permanently replacing the true label of 8,000 randomly selected images with a uniformly random incorrect label \cite{zhang2017understanding, nakkiran2019deep}. The validation and test sets remain "clean." All models are trained on the noisy training set and evaluated on the clean sets.
+To amplify the double descent effect \cite{nakkiran2019deep}, 20\% label noise is introduced to the 40,000-image training set. This is achieved by permanently replacing the true label of 8,000 randomly selected images with a uniformly random incorrect label. The validation and test sets remain "clean." All models are trained on the noisy training set and evaluated on the clean sets.
 
 \subsection{Classical Baseline}
 
@@ -101,7 +101,7 @@ To isolate model capacity ($k$) as the independent variable, all other hyperpara
     \end{tabular}
 \end{table}
 
-This configuration ensures sufficient time for models to fit the noisy training data, which isrequired for the "second descent" \cite{nakkiran2019deep}.
+This configuration ensures sufficient time for models to fit the noisy training data, which is required for the "second descent."
 
 \subsubsection{Training and evaluation}
 

@@ -70,7 +70,7 @@ Model-wise double descent is confirmed by test set performance (\autoref{tab:sca
 
 \subsubsection{Statistical Significance}
 
-McNemar's test \cite{demsar2006statistical} confirms that the over-parameterized $\text{ScaledCNN}(k=64)$ outperforms the SVM baseline ($p \approx 0$, \autoref{tab:mcnemar_results}).
+McNemar's test confirms that the over-parameterized $\text{ScaledCNN}(k=64)$ outperforms the SVM baseline ($p \approx 0$, \autoref{tab:mcnemar_results}).
 
 The test also verifies that the initial accuracy drop from $k=1$ to $k=2$ is significant ($p = 0.0037$), while the difference between $k=2$ and $k=4$ is not ($p = 0.967$), statistically identifying the trough. The recovery in the over-parameterized regime is robust: improvements from $k=8 \to 16$, $k=16 \to 32$, and $k=32 \to 64$ are all significant ($p < 0.001$).
 
