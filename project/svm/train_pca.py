@@ -12,15 +12,15 @@ from svm.constants import (
     PATCH_SIZE,
     PCA_DIM,
 )
+from utils import require_file
 
 
 def main():
     # Check for required files
-    patches_path = Path(PATCHES_PATH)
-    if not patches_path.exists():
-        print(f"ERROR: Patches file not found at {patches_path}")
-        print("Please run: uv run python -m svm.extract_patches")
-        return
+    patches_path = require_file(
+        PATCHES_PATH,
+        hint="Extract patches first"
+    )
 
     # Load patches
     print(f"Loading patches from: {patches_path}")

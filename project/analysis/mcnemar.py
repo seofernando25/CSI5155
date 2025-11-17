@@ -16,7 +16,7 @@ from paths import METRICS_DIR, REPO_ROOT
 from scaledcnn.eval import build_model_from_checkpoint
 from svm.constants import SVM_CLASSIFIER_PATH
 from svm.model import ClassifierSVM
-from utils import collect_scaledcnn_predictions
+from utils import collect_scaledcnn_predictions, require_file
 
 
 DEFAULT_RESULTS_PATH = METRICS_DIR / "mcnemar_results_mlxtend.json"
@@ -73,10 +73,7 @@ def main(argv: List[str] | None = None) -> Dict:
                     )
 
                 model_type = "svm" if model_id == "svm" else "scaledcnn"
-                if not model_path.exists():
-                    raise FileNotFoundError(
-                        f"Model file not found for '{model_id}' at {model_path}"
-                    )
+                model_path = require_file(model_path)
 
                 specs[model_id] = ModelSpec(
                     model_id=model_id, model_type=model_type, model_path=model_path
@@ -95,8 +92,7 @@ def main(argv: List[str] | None = None) -> Dict:
                 else:
                     # Compute ScaledCNN predictions
                     split = "test"
-                    if not model_path.exists():
-                        raise FileNotFoundError(f"ScaledCNN checkpoint not found at {model_path}")
+                    require_file(model_path)
 
                     checkpoint = torch.load(str(model_path), map_location=device)
                     model, _ = build_model_from_checkpoint(checkpoint, device)

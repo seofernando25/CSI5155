@@ -18,32 +18,26 @@ from svm.constants import (
     SVM_C,
     RANDOM_STATE,
 )
+from utils import require_file
 
 
 def _load_requirements():
-    pca_path = Path(PCA_PATH)
-    if not pca_path.exists():
-        raise FileNotFoundError(
-            f"PCA file not found at {pca_path}. Please run: uv run python -m svm.train_pca"
-        )
-
-    fv_path = Path(FISHER_VECTORS_PATH)
-    if not fv_path.exists():
-        raise FileNotFoundError(
-            f"Fisher Vectors file not found at {fv_path}. Please run: uv run python -m svm.compute_fisher_vectors"
-        )
-
-    gmm_path = Path(GMM_PATH)
-    if not gmm_path.exists():
-        raise FileNotFoundError(
-            f"GMM file not found at {gmm_path}. Please run: uv run python -m svm.compute_fisher_vectors"
-        )
-
-    labels_path = Path(LABELS_PATH)
-    if not labels_path.exists():
-        raise FileNotFoundError(
-            f"Labels file not found at {labels_path}. Please run: uv run python -m svm.extract_patches"
-        )
+    pca_path = require_file(
+        PCA_PATH,
+        hint="Train PCA first"
+    )
+    fv_path = require_file(
+        FISHER_VECTORS_PATH,
+        hint="Compute fisher vectors first"
+    )
+    gmm_path = require_file(
+        GMM_PATH,
+        hint="Compute fisher vectors first"
+    )
+    labels_path = require_file(
+        LABELS_PATH,
+        hint="Extract patches first"
+    )
 
     return pca_path, fv_path, gmm_path, labels_path
 

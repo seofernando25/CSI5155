@@ -6,6 +6,7 @@ import numpy as np
 from data import load_cifar10_data
 from svm.model import ClassifierSVM
 from svm.constants import SVM_CLASSIFIER_PATH
+from utils import require_file
 
 
 def run(model_path: str = SVM_CLASSIFIER_PATH):
@@ -15,12 +16,11 @@ def run(model_path: str = SVM_CLASSIFIER_PATH):
     writer = SummaryWriter(log_dir=str(log_dir))
     print(f"TensorBoard logging to: {log_dir.resolve()}")
 
-    model_path_obj = Path(model_path)
-    if not model_path_obj.exists():
-        writer.close()
-        raise FileNotFoundError(
-            f"Model file not found at {model_path_obj}. Please train the model first: uv run python -m svm.train"
-        )
+    model_path_obj = require_file(
+        model_path,
+        hint="Train the model first"
+    )
+
 
     print(f"Loading trained model from: {model_path_obj}")
     model = ClassifierSVM.load(str(model_path_obj))

@@ -54,7 +54,7 @@ def run(
         class_names=class_names,
         dataloader_factory=get_cifar10_dataloader,
         on_checkpoint_loaded=_on_checkpoint_loaded,
-        missing_checkpoint_hint="Please train the model first: uv run python -m scaledcnn.train",
+        missing_checkpoint_hint="Train the model first",
     )
 
     metrics["config"] = extracted_config

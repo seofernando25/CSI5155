@@ -14,6 +14,7 @@ from sklearn.metrics import (
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from device import device
+from utils import require_file
 
 def summarize_classification_results(
     labels: np.ndarray,
@@ -159,11 +160,10 @@ def evaluate_model_checkpoint(
     ] = run_classification_evaluation,
     on_checkpoint_loaded: Optional[Callable[[dict], None]] = None,
 ) -> dict:
-    model_path_obj = Path(checkpoint_path)
-    if not model_path_obj.exists():
-        raise FileNotFoundError(
-            f"Model file not found at {model_path_obj}. Please train the model first."
-        )
+    model_path_obj = require_file(
+        checkpoint_path,
+        hint="Train the model first"
+    )
 
     checkpoint = torch.load(str(model_path_obj), map_location=device)
     model = model_builder(checkpoint, device)

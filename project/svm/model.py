@@ -8,6 +8,7 @@ from sklearn.pipeline import Pipeline
 from typing import List, Optional
 from tqdm import tqdm
 import joblib
+from utils import require_file
 
 
 class ClassifierSVM:
@@ -131,9 +132,7 @@ class ClassifierSVM:
 
     @classmethod
     def load(cls, filepath: str) -> "ClassifierSVM":
-        filepath_obj = Path(filepath)
-        if not filepath_obj.exists():
-            raise FileNotFoundError(f"Model file not found: {filepath_obj}")
+        filepath_obj = require_file(filepath)
 
         # Load model data
         model_data = joblib.load(filepath_obj)

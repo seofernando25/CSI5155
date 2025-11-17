@@ -4,15 +4,15 @@ from scaledcnn.evaluation import summarize_classification_results
 from data import get_cifar10_class_names, get_cifar10_split
 from svm.constants import SVM_CLASSIFIER_PATH
 from svm.model import ClassifierSVM
+from utils import require_file
 
 
 def main():
     # Load model
-    model_path = Path(SVM_CLASSIFIER_PATH)
-    if not model_path.exists():
-        print(f"ERROR: Model file not found at {model_path}")
-        print("Please train the model first: uv run python -m svm.train")
-        return
+    model_path = require_file(
+        SVM_CLASSIFIER_PATH,
+        hint="Train the model first"
+    )
 
     model = ClassifierSVM.load(str(model_path))
 

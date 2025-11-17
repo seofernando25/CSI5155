@@ -8,19 +8,17 @@ from sklearn.metrics import accuracy_score, f1_score
 from data import get_cifar10_class_names, get_cifar10_split
 from svm.constants import SVM_CLASSIFIER_PATH
 from svm.model import ClassifierSVM
-from utils import generate_classification_report_and_confusion_matrix
+from utils import generate_classification_report_and_confusion_matrix, require_file
 
 
 def run(
     model_path: str = SVM_CLASSIFIER_PATH,
     split: str = "test",
 ):
-    model_path_obj = Path(model_path)
-    if not model_path_obj.exists():
-        raise FileNotFoundError(
-            f"Model file not found at {model_path_obj}. Please train the model first: "
-            "uv run main.py svm train"
-        )
+    model_path_obj = require_file(
+        model_path,
+        hint="Train the model first"
+    )
 
     model = ClassifierSVM.load(str(model_path_obj))
     X, y = get_cifar10_split(split)

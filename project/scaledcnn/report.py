@@ -14,6 +14,7 @@ from scaledcnn.eval import build_model_from_checkpoint
 from utils import (
     collect_scaledcnn_predictions,
     generate_classification_report_and_confusion_matrix,
+    require_file,
 )
 
 
@@ -59,23 +60,16 @@ def run(
     split: str = "test",
     batch_size: int = 256,
 ):
-    model_path_obj = MODELS_DIR / f"scaledcnn_k{k}.pth"
-    if not model_path_obj.exists():
-        raise FileNotFoundError(f"Model not found at {model_path_obj}")
+    model_path_obj = require_file(MODELS_DIR / f"scaledcnn_k{k}.pth")
 
     # Infer TensorBoard log directory from k value
-    base_dir = TENSORBOARD_DIR / "training" / f"scaledcnn_k{k}"
-    if not base_dir.exists():
-        raise FileNotFoundError(f"No TensorBoard directory found at {base_dir}")
+    base_dir = require_file(TENSORBOARD_DIR / "training" / f"scaledcnn_k{k}")
     runs = sorted(
         [p for p in base_dir.iterdir() if p.is_dir() and p.name.startswith("run_")]
     )
     if not runs:
         raise FileNotFoundError(f"No run directories found inside {base_dir}")
-    logdir_path = runs[-1]
-
-    if not logdir_path.exists():
-        raise FileNotFoundError(f"Log directory not found at {logdir_path}")
+    logdir_path = require_file(runs[-1])
 
      # Set up output paths
     model_stem = model_path_obj.stem

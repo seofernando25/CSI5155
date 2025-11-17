@@ -17,20 +17,18 @@ from svm.constants import (
     N_COMPONENTS,
     RANDOM_STATE,
 )
+from utils import require_file
 
 
 def load_pretrained_components():
-    pca_path = Path(PCA_PATH)
-    if not pca_path.exists():
-        print(f"ERROR: PCA file not found at {pca_path}")
-        print("Please run: uv run python -m svm.train_pca")
-        return None, None
-
-    gmm_path = Path(GMM_PATH)
-    if not gmm_path.exists():
-        print(f"ERROR: GMM file not found at {gmm_path}")
-        print("Please run: uv run python -m svm.compute_fisher_vectors")
-        return None, None
+    pca_path = require_file(
+        PCA_PATH,
+        hint="Train PCA first"
+    )
+    gmm_path = require_file(
+        GMM_PATH,
+        hint="Train GMM first"
+    )
 
     # Load PCA
     print(f"Loading PCA from: {pca_path}")
@@ -145,8 +143,6 @@ def main():
 
     # Load pre-trained components
     pca, gmm = load_pretrained_components()
-    if pca is None or gmm is None:
-        return
 
     # Compute Fisher Vectors for training and validation sets
     X_train_fv = compute_fisher_vectors(X_train, pca, gmm)

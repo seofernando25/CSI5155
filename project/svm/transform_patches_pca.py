@@ -9,21 +9,20 @@ from svm.constants import (
     PCA_PATH,
     PCA_PATCHES_PATH,
 )
+from utils import require_file
 
 
 def main():
     # Check for required files
-    patches_path = Path(PATCHES_PATH)
-    if not patches_path.exists():
-        print(f"ERROR: Patches file not found at {patches_path}")
-        print("Please run: uv run python -m svm.extract_patches")
-        return
+    patches_path = require_file(
+        PATCHES_PATH,
+        hint="Extract patches first"
+    )
+    pca_path = require_file(
+        PCA_PATH,
+        hint="Train PCA first"
+    )
 
-    pca_path = Path(PCA_PATH)
-    if not pca_path.exists():
-        print(f"ERROR: PCA file not found at {pca_path}")
-        print("Please run: uv run python -m svm.train_pca")
-        return
 
     # Load patches
     print(f"Loading patches from: {patches_path}")

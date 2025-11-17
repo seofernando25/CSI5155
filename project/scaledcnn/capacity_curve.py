@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from paths import FIGURES_DIR, METRICS_DIR
 from scaledcnn.info import describe_model
+from utils import require_file
 
 
 def _interpolate(x: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -31,9 +32,7 @@ def run(
         info = describe_model(k=k)
         params_list.append(info["trainable_params"])
         # Load metrics for this k value
-        metrics_path = METRICS_DIR / f"scaledcnn_k{k}_test_training_report.json"
-        if not metrics_path.exists():
-            raise FileNotFoundError(f"Metrics JSON not found at {metrics_path}")
+        metrics_path = require_file(METRICS_DIR / f"scaledcnn_k{k}_test_training_report.json")
         with metrics_path.open("r", encoding="utf-8") as f:
             data = json.load(f)
         acc = float(data["classification_report"]["accuracy"])

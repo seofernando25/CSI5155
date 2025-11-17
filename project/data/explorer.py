@@ -3,14 +3,13 @@ import io
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Dict, Literal
-
 import numpy as np
 from datasets import Dataset, DatasetDict, load_from_disk
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse, Response
 from PIL import Image
 import uvicorn
-
+from utils import require_file
 from data.datasets import get_cifar10_class_names
 
 
@@ -142,9 +141,7 @@ async def lifespan(_app: FastAPI):
         if dataset_dir.is_dir():
             base_datasets_info[dataset_dir.name] = load_dataset_info(dataset_dir)
 
-    processed_root = repo_root / ".cache" / "processed_datasets"
-    if not processed_root.exists():
-        raise FileNotFoundError("Processed datasets not found")
+    processed_root = require_file(repo_root / ".cache" / "processed_datasets")
     for dataset_dir in processed_root.iterdir():
         if dataset_dir.is_dir():
             processed_datasets_info[dataset_dir.name] = load_dataset_info(dataset_dir)

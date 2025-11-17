@@ -8,6 +8,7 @@ from scaledcnn.eval import build_model_from_checkpoint
 from utils import (
     collect_scaledcnn_predictions,
     generate_classification_report_and_confusion_matrix,
+    require_file,
 )
 
 
@@ -16,11 +17,10 @@ def run(
     split: str = "test",
     batch_size: int = 128,
 ):
-    model_path_obj = Path(model_path)
-    if not model_path_obj.exists():
-        print(f"ERROR: Model file not found at {model_path}")
-        print("Please train the model first: uv run main.py scaledcnn train")
-        return None
+    model_path_obj = require_file(
+        model_path,
+        hint="Train the model first"
+    )
 
     checkpoint = torch.load(str(model_path_obj), map_location=device)
     model, config = build_model_from_checkpoint(checkpoint, device)

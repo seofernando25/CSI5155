@@ -1,12 +1,10 @@
 from __future__ import annotations
-
 from pathlib import Path
 from typing import List, Tuple, Dict, Any
-
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-
+from utils import require_file
 from device import device
 
 
@@ -90,14 +88,12 @@ class NumpyDatasetDict:
 
 def load_cifar10_data():
     """Load CIFAR-10 dataset from processed numpy arrays."""
+    
     repo_root = Path(__file__).resolve().parents[1]
-    dataset_path = repo_root / ".cache" / "processed_datasets" / "cifar10"
-
-    if not dataset_path.exists():
-        raise FileNotFoundError(
-            f"Dataset not found at {dataset_path}. "
-            "Please run: uv run python -m data.download (and then uv run python -m data.process)"
-        )
+    dataset_path = require_file(
+        repo_root / ".cache" / "processed_datasets" / "cifar10",
+        hint="Download and process the dataset first"
+    )
 
     # Load numpy arrays for each split
     splits = {}
@@ -107,12 +103,14 @@ def load_cifar10_data():
         images_path = dataset_path / f"{split_name}_images.npy"
         labels_path = dataset_path / f"{split_name}_labels.npy"
         
-        if not images_path.exists() or not labels_path.exists():
-            raise FileNotFoundError(
-                f"Missing files for split '{split_name}': "
-                f"expected {images_path} and {labels_path}. "
-                "Please run: uv run python -m data.process"
-            )
+        require_file(
+            images_path,
+            hint="Process the dataset first"
+        )
+        require_file(
+            labels_path,
+            hint="Process the dataset first"
+        )
         
         images = np.load(str(images_path))
         labels = np.load(str(labels_path))
