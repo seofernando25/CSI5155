@@ -1,4 +1,3 @@
-from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Optional, Sequence, Sized
 import numpy as np

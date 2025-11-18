@@ -126,7 +126,7 @@ class ClassifierSVM:
         joblib.dump(model_data, filepath_obj)
 
     @classmethod
-    def load(cls, filepath: str) -> "ClassifierSVM":
+    def load(cls, filepath: str) -> ClassifierSVM:
         filepath_obj = require_file(filepath)
 
         # Load model data
