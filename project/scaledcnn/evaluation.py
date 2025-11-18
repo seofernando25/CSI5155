@@ -14,7 +14,7 @@ from sklearn.metrics import (
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from device import device
-from utils import require_file
+from utils.paths import require_file
 
 
 def summarize_classification_results(

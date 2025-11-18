@@ -3,13 +3,13 @@ from pathlib import Path
 import torch
 
 from device import device
-from data import CIFAR10_CLASS_NAMES, get_cifar10_dataloader
+from data.datasets import CIFAR10_CLASS_NAMES, get_cifar10_dataloader
 from scaledcnn.eval import build_model_from_checkpoint
-from utils import (
+from utils.metrics import (
     collect_scaledcnn_predictions,
     generate_classification_report_and_confusion_matrix,
-    require_file,
 )
+from utils.paths import require_file
 
 
 def run(

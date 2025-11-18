@@ -8,7 +8,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 from torch.utils.data import DataLoader
 from device import device
 from paths import FIGURES_DIR, METRICS_DIR
-from visualization import plot_confusion_matrix
+from visualization.confusion import plot_confusion_matrix
 
 
 def save_confusion_matrix_json(

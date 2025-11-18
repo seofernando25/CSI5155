@@ -8,14 +8,14 @@ import numpy as np
 import torch
 from tensorboard.backend.event_processing import event_accumulator
 from device import device
-from data import CIFAR10_CLASS_NAMES, get_cifar10_dataloader
+from data.datasets import CIFAR10_CLASS_NAMES, get_cifar10_dataloader
 from paths import FIGURES_DIR, METRICS_DIR, MODELS_DIR, TENSORBOARD_DIR
 from scaledcnn.eval import build_model_from_checkpoint
-from utils import (
+from utils.metrics import (
     collect_scaledcnn_predictions,
     generate_classification_report_and_confusion_matrix,
-    require_file,
 )
+from utils.paths import require_file
 
 
 @dataclass

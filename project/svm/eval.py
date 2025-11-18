@@ -1,8 +1,8 @@
 from scaledcnn.evaluation import summarize_classification_results
-from data import CIFAR10_CLASS_NAMES, get_cifar10_split
+from data.datasets import CIFAR10_CLASS_NAMES, get_cifar10_split
 from svm.constants import SVM_CLASSIFIER_PATH
 from svm.model import ClassifierSVM
-from utils import require_file
+from utils.paths import require_file
 
 
 def main():

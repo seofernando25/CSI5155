@@ -4,10 +4,11 @@ from __future__ import annotations
 import numpy as np
 from sklearn.metrics import accuracy_score, f1_score
 
-from data import CIFAR10_CLASS_NAMES, get_cifar10_split
+from data.datasets import CIFAR10_CLASS_NAMES, get_cifar10_split
 from svm.constants import SVM_CLASSIFIER_PATH
 from svm.model import ClassifierSVM
-from utils import generate_classification_report_and_confusion_matrix, require_file
+from utils.metrics import generate_classification_report_and_confusion_matrix
+from utils.paths import require_file
 
 
 def run(

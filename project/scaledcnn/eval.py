@@ -3,7 +3,7 @@ from pathlib import Path
 import torch
 
 from scaledcnn.evaluation import run_checkpoint_evaluation_cli
-from data import CIFAR10_CLASS_NAMES, get_cifar10_dataloader
+from data.datasets import CIFAR10_CLASS_NAMES, get_cifar10_dataloader
 from scaledcnn.model import ScaledCNN
 
 

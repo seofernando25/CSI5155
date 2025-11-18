@@ -3,10 +3,10 @@ from datetime import datetime
 from pathlib import Path
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
-from data import load_cifar10_data
+from data.datasets import load_cifar10_data
 from svm.model import ClassifierSVM
 from svm.constants import SVM_CLASSIFIER_PATH
-from utils import require_file
+from utils.paths import require_file
 
 
 def run(model_path: str = SVM_CLASSIFIER_PATH):

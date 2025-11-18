@@ -9,8 +9,8 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse, Response
 from PIL import Image
 import uvicorn
-from utils import require_file
-from data import CIFAR10_CLASS_NAMES
+from utils.paths import require_file
+from data.datasets import CIFAR10_CLASS_NAMES
 
 
 # Global variables to store dataset info

@@ -11,12 +11,13 @@ import torch
 from mlxtend.evaluate import mcnemar
 
 from device import device
-from data import get_cifar10_dataloader, get_cifar10_split
+from data.datasets import get_cifar10_dataloader, get_cifar10_split
 from paths import METRICS_DIR, REPO_ROOT
 from scaledcnn.eval import build_model_from_checkpoint
 from svm.constants import SVM_CLASSIFIER_PATH
 from svm.model import ClassifierSVM
-from utils import collect_scaledcnn_predictions, require_file
+from utils.metrics import collect_scaledcnn_predictions
+from utils.paths import require_file
 
 
 DEFAULT_RESULTS_PATH = METRICS_DIR / "mcnemar_results_mlxtend.json"

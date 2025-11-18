@@ -18,7 +18,8 @@ from svm.constants import (
     SVM_C,
     RANDOM_STATE,
 )
-from utils import require_file, load_pca, load_gmm
+from utils.paths import require_file
+from utils.loaders import load_pca, load_gmm
 
 
 def _load_requirements():

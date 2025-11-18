@@ -4,7 +4,7 @@ from typing import List, Tuple, Dict, Any
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-from utils import require_file
+from utils.paths import require_file
 from device import device
 from torch.utils.data import DataLoader
 

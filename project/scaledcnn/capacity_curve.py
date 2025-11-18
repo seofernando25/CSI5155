@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from paths import FIGURES_DIR, METRICS_DIR
 from scaledcnn.info import describe_model
-from utils import require_file
+from utils.paths import require_file
 
 
 def _interpolate(x: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:

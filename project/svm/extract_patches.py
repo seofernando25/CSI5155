@@ -4,7 +4,7 @@ import joblib
 import numpy as np
 from tqdm import tqdm
 
-from data import load_cifar10_data
+from data.datasets import load_cifar10_data
 from svm.constants import (
     PATCH_SIZE,
     STRIDE,

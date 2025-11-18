@@ -8,7 +8,7 @@ from sklearn.pipeline import Pipeline
 from typing import List, Optional
 from tqdm import tqdm
 import joblib
-from utils import require_file
+from utils.paths import require_file
 
 
 class ClassifierSVM:

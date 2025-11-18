@@ -12,7 +12,7 @@ from svm.constants import (
     PATCH_SIZE,
     PCA_DIM,
 )
-from utils import require_file
+from utils.paths import require_file
 
 
 def main():

@@ -8,7 +8,7 @@ from sklearn.svm import LinearSVC
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 
-from data import load_cifar10_data
+from data.datasets import load_cifar10_data
 from svm.constants import (
     PCA_PATH,
     GMM_PATH,
@@ -17,7 +17,8 @@ from svm.constants import (
     N_COMPONENTS,
     RANDOM_STATE,
 )
-from utils import require_file, load_pca, load_gmm
+from utils.paths import require_file
+from utils.loaders import load_pca, load_gmm
 
 
 def compute_fisher_vectors(images, pca, gmm):
