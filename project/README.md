@@ -1,6 +1,8 @@
 # From Handcrafted Features to Double Descent on CIFAR-10
 
-CSI 5155 Machine Learning Project Report (Fall 2025)
+CSI 5155 - Machine Learning
+
+Project Report (Fall 2025)
 
 ## Requirements
 
