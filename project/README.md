@@ -22,7 +22,7 @@ uv sync
 **Important:** Run data processing first before either pipeline.
 
 1. Process data: `uv run main.py data download` then `uv run main.py data process`
-2. Choose a pipeline (SVM or ScaledCNN) and run commands in order see usage below
+2. Choose a pipeline (SVM or ScaledCNN) and run commands in order, see usage below
 3. Results are saved to `.cache/` (figures, models, logs, etc)
 
 
@@ -72,10 +72,10 @@ uv run main.py svm report
 
 ### ScaledCNN
 
-Train and evaluate ScaledCNN models (the `--k` parameter controls model capacity):
+Train and evaluate ScaledCNN models:
 
 ```bash
-# Train model
+# Train model (k is the width scaling factor: 1, 2, 4, 8, 16, 32, 64)
 uv run main.py scaledcnn train --k 4
 # Evaluate checkpoint
 uv run main.py scaledcnn eval --k 4
