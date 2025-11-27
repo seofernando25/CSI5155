@@ -13,7 +13,7 @@ from svm.constants import (
     N_COMPONENTS,
     RANDOM_STATE,
 )
-from utils.loaders import load_pca
+from svm.loaders import load_pca
 
 
 def main():

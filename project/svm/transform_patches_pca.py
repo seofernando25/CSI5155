@@ -10,7 +10,7 @@ from svm.constants import (
     PCA_PATCHES_PATH,
 )
 from utils.paths import require_file
-from utils.loaders import load_pca
+from svm.loaders import load_pca
 
 
 def main():

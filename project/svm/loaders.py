@@ -23,3 +23,4 @@ def load_gmm(path: Path | str) -> GaussianMixture:
         f"Expected GaussianMixture, got {type(gmm).__name__}"
     )
     return gmm
+

@@ -19,7 +19,7 @@ from svm.constants import (
     RANDOM_STATE,
 )
 from utils.paths import require_file
-from utils.loaders import load_pca, load_gmm
+from svm.loaders import load_pca, load_gmm
 
 
 def _load_requirements():
