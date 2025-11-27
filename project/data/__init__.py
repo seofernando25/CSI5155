@@ -11,7 +11,7 @@ def register_subcommands(subparsers):
     download_parser.set_defaults(entry=lambda args: download.run(force=args.force))
 
     process_parser = subparsers.add_parser(
-        "process", help="Process datasets (resize/gray)"
+        "process", help="Process datasets"
     )
     process_parser.add_argument(
         "--force",

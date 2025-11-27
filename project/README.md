@@ -25,9 +25,22 @@ All commands are run through the main entry point:
 uv run main.py <command>
 ```
 
+### Data Processing
+
+Download and prepare datasets:
+
+```bash
+# Download CIFAR-10 dataset
+uv run main.py data download
+# Process datasets (normalize, split train/val, add label noise)
+uv run main.py data process
+# Launch dataset explorer server (optional)
+uv run main.py data explorer
+```
+
 ### SVM Pipeline
 
-Train and evaluate the SVM classifier on CIFAR-10:
+Train and evaluate the SVM classifier:
 
 ```bash
 # Extract patches
@@ -38,6 +51,8 @@ uv run main.py svm train-pca
 uv run main.py svm transform-patches
 # Compute Fisher Vectors
 uv run main.py svm compute-fv
+# Hyperparameter Optimization (Optional, tuned contansts already in constants.py)
+uv run main.py svm hparam
 # Train SVM
 uv run main.py svm train
 # Evaluate
